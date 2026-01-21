@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, ArrowRight, Zap, Target, Shield, TrendingUp, Users, RefreshCw, Plus, X } from "lucide-react";
+import { CheckCircle2, ArrowRight, Zap, Target, Shield, TrendingUp, Users, RefreshCw, Plus, X, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const playTypes = [
@@ -33,8 +33,26 @@ export const OurStrategy = () => {
     { id: 2, text: "Deep SAP integration expertise" },
     { id: 3, text: "Proven ROI: 3.2x documented return" },
   ]);
+  const [coreTeam, setCoreTeam] = useState([
+    { id: 1, name: "Sarah Chen", role: "Account Manager" },
+    { id: 2, name: "Michael Torres", role: "Solution Architect" },
+    { id: 3, name: "Emma Wilson", role: "Customer Success" },
+    { id: 4, name: "David Kim", role: "Technical Lead" },
+  ]);
 
   const currentPlay = playTypes.find(p => p.value === selectedPlay);
+
+  const addTeamMember = () => {
+    setCoreTeam([...coreTeam, { id: Date.now(), name: "", role: "" }]);
+  };
+
+  const removeTeamMember = (id: number) => {
+    setCoreTeam(coreTeam.filter(m => m.id !== id));
+  };
+
+  const updateTeamMember = (id: number, field: string, value: string) => {
+    setCoreTeam(coreTeam.map(m => m.id === id ? { ...m, [field]: value } : m));
+  };
 
   const addThreat = () => {
     setThreats([...threats, { id: Date.now(), competitor: "", note: "", level: "medium" }]);
@@ -199,7 +217,46 @@ export const OurStrategy = () => {
           </FieldGroup>
         </div>
 
-        {/* Strategic Play - Editable */}
+        {/* Core Team */}
+        <FieldGroup label="Core Team">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {coreTeam.map((member) => (
+              <div key={member.id} className="flex items-center gap-2 bg-muted/30 rounded-lg p-2 group">
+                <UserCircle className="w-8 h-8 text-accent flex-shrink-0" />
+                <div className="flex-1 min-w-0 space-y-1">
+                  <Input
+                    value={member.name}
+                    onChange={(e) => updateTeamMember(member.id, "name", e.target.value)}
+                    placeholder="Name"
+                    className="h-6 text-sm font-medium bg-background px-2"
+                  />
+                  <Input
+                    value={member.role}
+                    onChange={(e) => updateTeamMember(member.id, "role", e.target.value)}
+                    placeholder="Role"
+                    className="h-6 text-xs text-muted-foreground bg-background px-2"
+                  />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => removeTeamMember(member.id)}
+                >
+                  <X className="w-3 h-3 text-muted-foreground" />
+                </Button>
+              </div>
+            ))}
+            <Button 
+              variant="ghost" 
+              className="h-auto min-h-[60px] border border-dashed border-border text-xs text-muted-foreground flex items-center justify-center gap-1"
+              onClick={addTeamMember}
+            >
+              <Plus className="w-3 h-3" /> Add member
+            </Button>
+          </div>
+        </FieldGroup>
+
         <div className="bg-muted/30 rounded-lg p-4 space-y-4">
           <h4 className="text-sm font-medium">This Quarter's Strategic Play</h4>
           
