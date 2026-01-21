@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { SectionCard } from "./SectionCard";
 import { FieldGroup } from "./FieldGroup";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle2, ArrowRight, Zap, Target, Shield, TrendingUp, Users, RefreshCw, Plus, X, UserCircle } from "lucide-react";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, Cell, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
 
 const playTypes = [
@@ -110,6 +112,62 @@ export const OurStrategy = () => {
     { totalValue: 0, weightedValue: 0 }
   );
 
+  // Pipeline chart data - aggregate by stage
+  const stageOrder = ["discovery", "in-progress", "proposal", "negotiation", "closed-won", "closed-lost"];
+  const stageLabels: Record<string, string> = {
+    "discovery": "Discovery",
+    "in-progress": "In Progress",
+    "proposal": "Proposal",
+    "negotiation": "Negotiation",
+    "closed-won": "Closed Won",
+    "closed-lost": "Closed Lost",
+  };
+  const stageColors: Record<string, string> = {
+    "discovery": "hsl(var(--muted-foreground))",
+    "in-progress": "hsl(var(--primary))",
+    "proposal": "hsl(var(--primary))",
+    "negotiation": "hsl(var(--warning))",
+    "closed-won": "hsl(var(--success))",
+    "closed-lost": "hsl(var(--destructive))",
+  };
+
+  const pipelineChartData = useMemo(() => {
+    const stageMap: Record<string, { total: number; weighted: number; count: number }> = {};
+    
+    stageOrder.forEach(stage => {
+      stageMap[stage] = { total: 0, weighted: 0, count: 0 };
+    });
+
+    opportunities.forEach(opp => {
+      const value = parseValue(opp.value);
+      const probability = parseProbability(opp.probability);
+      const weighted = value * probability;
+      if (stageMap[opp.status]) {
+        stageMap[opp.status].total += value;
+        stageMap[opp.status].weighted += weighted;
+        stageMap[opp.status].count += 1;
+      }
+    });
+
+    return stageOrder
+      .filter(stage => stageMap[stage].count > 0)
+      .map(stage => ({
+        stage,
+        label: stageLabels[stage],
+        total: stageMap[stage].total,
+        weighted: stageMap[stage].weighted,
+        count: stageMap[stage].count,
+        fill: stageColors[stage],
+      }));
+  }, [opportunities]);
+
+  const chartConfig = {
+    weighted: {
+      label: "Weighted Value",
+      color: "hsl(var(--primary))",
+    },
+  };
+
   const addTeamMember = () => {
     setCoreTeam([...coreTeam, { id: Date.now(), name: "", role: "" }]);
   };
@@ -193,6 +251,43 @@ export const OurStrategy = () => {
               </div>
             </div>
           </div>
+
+          {/* Pipeline Chart */}
+          {pipelineChartData.length > 0 && (
+            <div className="mb-6 p-4 bg-muted/20 rounded-lg border border-border/50">
+              <h5 className="text-xs font-medium text-muted-foreground mb-3">Pipeline by Stage (Weighted Value)</h5>
+              <ChartContainer config={chartConfig} className="h-[140px] w-full">
+                <BarChart data={pipelineChartData} layout="vertical" margin={{ left: 0, right: 40, top: 0, bottom: 0 }}>
+                  <XAxis type="number" hide />
+                  <YAxis 
+                    type="category" 
+                    dataKey="label" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    width={80}
+                    tick={{ fontSize: 11 }}
+                  />
+                  <ChartTooltip 
+                    content={
+                      <ChartTooltipContent 
+                        formatter={(value, name, item) => (
+                          <div className="flex flex-col gap-1">
+                            <span className="font-medium">{formatCurrency(item.payload.weighted)} weighted</span>
+                            <span className="text-muted-foreground text-xs">{formatCurrency(item.payload.total)} total ({item.payload.count} opp{item.payload.count > 1 ? 's' : ''})</span>
+                          </div>
+                        )}
+                      />
+                    }
+                  />
+                  <Bar dataKey="weighted" radius={[0, 4, 4, 0]} maxBarSize={24}>
+                    {pipelineChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ChartContainer>
+            </div>
+          )}
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
