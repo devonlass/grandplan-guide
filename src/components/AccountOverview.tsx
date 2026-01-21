@@ -2,7 +2,7 @@ import { SectionCard } from "./SectionCard";
 import { FieldGroup } from "./FieldGroup";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Calendar, DollarSign, TrendingUp, Users, Anchor } from "lucide-react";
+import { Building2, Calendar, DollarSign, TrendingUp, Users, Anchor, Ship, Package } from "lucide-react";
 
 const industries = [
   { value: "ship-owner", label: "Ship Owner" },
@@ -15,12 +15,23 @@ const industries = [
   { value: "land-based", label: "Land Based" },
 ];
 
+const products = [
+  { id: "fleet-management", label: "Fleet Management", active: true },
+  { id: "maintenance", label: "Maintenance & Repair", active: true },
+  { id: "procurement", label: "Procurement", active: true },
+  { id: "crewing", label: "Crewing", active: false },
+  { id: "hseq", label: "HSEQ", active: true },
+  { id: "dry-docking", label: "Dry Docking", active: false },
+  { id: "analytics", label: "Analytics & BI", active: true },
+  { id: "compliance", label: "Compliance", active: false },
+];
+
 export const AccountOverview = () => {
   return (
     <SectionCard title="Account Overview">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Key Metrics Row */}
-        <div className="lg:col-span-4 grid grid-cols-2 md:grid-cols-4 gap-4 pb-6 border-b border-border">
+        <div className="lg:col-span-4 grid grid-cols-2 md:grid-cols-5 gap-4 pb-6 border-b border-border">
           <MetricCard
             icon={<DollarSign className="w-5 h-5" />}
             label="Annual Revenue"
@@ -33,6 +44,13 @@ export const AccountOverview = () => {
             label="Growth Potential"
             value="High"
             hubspot="growth_potential"
+          />
+          <MetricCard
+            icon={<Ship className="w-5 h-5" />}
+            label="Vessels"
+            value="124"
+            trend="+8"
+            hubspot="num_vessels"
           />
           <MetricCard
             icon={<Users className="w-5 h-5" />}
@@ -61,7 +79,7 @@ export const AccountOverview = () => {
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select industry" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-popover border shadow-lg z-50">
               {industries.map((industry) => (
                 <SelectItem key={industry.value} value={industry.value}>
                   <span className="flex items-center gap-2">
@@ -88,6 +106,28 @@ export const AccountOverview = () => {
             <span className="text-sm font-medium">82/100</span>
           </div>
         </FieldGroup>
+
+        {/* Products/Modules Section */}
+        <div className="lg:col-span-4 pt-4 border-t border-border">
+          <FieldGroup label="Current Products / Modules" hubspotField="products">
+            <div className="flex flex-wrap gap-2 mt-2">
+              {products.map((product) => (
+                <Badge 
+                  key={product.id}
+                  variant={product.active ? "default" : "outline"}
+                  className={product.active 
+                    ? "bg-accent/10 text-accent border border-accent/20" 
+                    : "bg-muted/50 text-muted-foreground border-dashed"
+                  }
+                >
+                  <Package className="w-3 h-3 mr-1" />
+                  {product.label}
+                  {!product.active && <span className="ml-1 text-[10px]">(opportunity)</span>}
+                </Badge>
+              ))}
+            </div>
+          </FieldGroup>
+        </div>
 
         <FieldGroup label="Account Owner" hubspotField="owner_id" className="lg:col-span-2">
           <span>Sarah Chen, Strategic Account Manager</span>
