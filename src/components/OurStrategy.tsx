@@ -61,9 +61,9 @@ export const OurStrategy = () => {
     { id: 3, text: "Proven ROI: 3.2x documented return" },
   ]);
   const [opportunities, setOpportunities] = useState([
-    { id: 1, name: "EU Compliance Module", value: "$450K", timeline: "Q2 2025", probability: "75%", status: "in-progress" },
-    { id: 2, name: "AI Customer Service Add-on", value: "$280K", timeline: "Q3 2025", probability: "40%", status: "discovery" },
-    { id: 3, name: "Enterprise License Expansion", value: "$600K", timeline: "Q4 2025", probability: "60%", status: "proposal" },
+    { id: 1, name: "EU Compliance Module", value: "$450K", timeline: "Q2 2025", probability: "75%", status: "demo" },
+    { id: 2, name: "AI Customer Service Add-on", value: "$280K", timeline: "Q3 2025", probability: "40%", status: "new" },
+    { id: 3, name: "Enterprise License Expansion", value: "$600K", timeline: "Q4 2025", probability: "60%", status: "proposal-sent" },
   ]);
   const [coreTeam, setCoreTeam] = useState([
     { id: 1, name: "Sarah Chen", role: "account-manager" },
@@ -113,22 +113,20 @@ export const OurStrategy = () => {
   );
 
   // Pipeline chart data - aggregate by stage
-  const stageOrder = ["discovery", "in-progress", "proposal", "negotiation", "closed-won", "closed-lost"];
+  const stageOrder = ["new", "qualified", "demo", "proposal-sent", "negotiation"];
   const stageLabels: Record<string, string> = {
-    "discovery": "Discovery",
-    "in-progress": "In Progress",
-    "proposal": "Proposal",
+    "new": "New",
+    "qualified": "Qualified",
+    "demo": "Demo",
+    "proposal-sent": "Proposal Sent",
     "negotiation": "Negotiation",
-    "closed-won": "Closed Won",
-    "closed-lost": "Closed Lost",
   };
   const stageColors: Record<string, string> = {
-    "discovery": "hsl(var(--muted-foreground))",
-    "in-progress": "hsl(var(--primary))",
-    "proposal": "hsl(var(--primary))",
-    "negotiation": "hsl(var(--warning))",
-    "closed-won": "hsl(var(--success))",
-    "closed-lost": "hsl(var(--destructive))",
+    "new": "hsl(var(--muted-foreground))",
+    "qualified": "hsl(var(--primary))",
+    "demo": "hsl(var(--primary))",
+    "proposal-sent": "hsl(var(--warning))",
+    "negotiation": "hsl(var(--success))",
   };
 
   const pipelineChartData = useMemo(() => {
@@ -205,7 +203,7 @@ export const OurStrategy = () => {
   };
 
   const addOpportunity = () => {
-    setOpportunities([...opportunities, { id: Date.now(), name: "", value: "", timeline: "", probability: "", status: "discovery" }]);
+    setOpportunities([...opportunities, { id: Date.now(), name: "", value: "", timeline: "", probability: "", status: "new" }]);
   };
 
   const removeOpportunity = (id: number) => {
@@ -341,23 +339,20 @@ export const OurStrategy = () => {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-popover border shadow-lg z-50">
-                          <SelectItem value="discovery">
-                            <Badge className="status-pill bg-muted text-muted-foreground">Discovery</Badge>
+                          <SelectItem value="new">
+                            <Badge className="status-pill bg-muted text-muted-foreground">New</Badge>
                           </SelectItem>
-                          <SelectItem value="in-progress">
-                            <Badge className="status-pill status-active">In Progress</Badge>
+                          <SelectItem value="qualified">
+                            <Badge className="status-pill status-active">Qualified</Badge>
                           </SelectItem>
-                          <SelectItem value="proposal">
-                            <Badge className="status-pill status-active">Proposal</Badge>
+                          <SelectItem value="demo">
+                            <Badge className="status-pill status-active">Demo</Badge>
+                          </SelectItem>
+                          <SelectItem value="proposal-sent">
+                            <Badge className="status-pill bg-warning/20 text-warning">Proposal Sent</Badge>
                           </SelectItem>
                           <SelectItem value="negotiation">
-                            <Badge className="status-pill bg-warning/20 text-warning">Negotiation</Badge>
-                          </SelectItem>
-                          <SelectItem value="closed-won">
-                            <Badge className="status-pill bg-success/20 text-success">Closed Won</Badge>
-                          </SelectItem>
-                          <SelectItem value="closed-lost">
-                            <Badge className="status-pill bg-destructive/20 text-destructive">Closed Lost</Badge>
+                            <Badge className="status-pill bg-success/20 text-success">Negotiation</Badge>
                           </SelectItem>
                         </SelectContent>
                       </Select>
