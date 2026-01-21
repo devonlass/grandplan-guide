@@ -24,6 +24,23 @@ const teamRoles = [
   { value: "ps-consultant", label: "PS Consultant" },
 ];
 
+const competitors = [
+  { value: "bassnet", label: "Bassnet" },
+  { value: "sertica", label: "Sertica" },
+  { value: "mariapps", label: "MariApps" },
+  { value: "sap", label: "SAP" },
+  { value: "helm", label: "Helm" },
+  { value: "jibe", label: "Jibe" },
+  { value: "shipmanager", label: "ShipManager" },
+  { value: "danaos", label: "Danaos" },
+  { value: "ibm-maximo", label: "IBM - Maximo" },
+  { value: "frs", label: "FRS" },
+  { value: "arribatec", label: "Arribatec Marine – InfoSHIP" },
+  { value: "oceanly", label: "Oceanly" },
+  { value: "mespas", label: "MESPAS" },
+  { value: "other", label: "Other" },
+];
+
 export const OurStrategy = () => {
   const [selectedPlay, setSelectedPlay] = useState("land-expand");
   const [milestones, setMilestones] = useState(
@@ -33,8 +50,8 @@ export const OurStrategy = () => {
     "Accelerate Acme's European expansion with our proven compliance automation suite, reducing time-to-market by 40% while cutting regulatory risk. Unlike competitors, our platform integrates natively with their existing SAP infrastructure."
   );
   const [threats, setThreats] = useState([
-    { id: 1, competitor: "TechCorp", note: "Aggressive pricing, but weak on compliance", level: "high" },
-    { id: 2, competitor: "CloudFirst", note: "Strong in EU, pursuing this account", level: "medium" },
+    { id: 1, competitor: "sertica", note: "Aggressive pricing, but weak on compliance", level: "high" },
+    { id: 2, competitor: "mariapps", note: "Strong in EU, pursuing this account", level: "medium" },
   ]);
   const [advantages, setAdvantages] = useState([
     { id: 1, text: "5-year relationship, trusted advisor status" },
@@ -169,12 +186,18 @@ export const OurStrategy = () => {
                       </SelectItem>
                     </SelectContent>
                   </Select>
-                  <Input
-                    value={threat.competitor}
-                    onChange={(e) => updateThreat(threat.id, "competitor", e.target.value)}
-                    placeholder="Competitor"
-                    className="w-24 h-8 text-sm font-medium bg-background"
-                  />
+                  <Select value={threat.competitor} onValueChange={(v) => updateThreat(threat.id, "competitor", v)}>
+                    <SelectTrigger className="w-32 h-8 text-sm font-medium bg-background">
+                      <SelectValue placeholder="Competitor" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border shadow-lg z-50">
+                      {competitors.map((comp) => (
+                        <SelectItem key={comp.value} value={comp.value}>
+                          {comp.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Input
                     value={threat.note}
                     onChange={(e) => updateThreat(threat.id, "note", e.target.value)}
