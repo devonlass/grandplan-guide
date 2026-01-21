@@ -58,6 +58,11 @@ export const OurStrategy = () => {
     { id: 2, text: "Deep SAP integration expertise" },
     { id: 3, text: "Proven ROI: 3.2x documented return" },
   ]);
+  const [opportunities, setOpportunities] = useState([
+    { id: 1, name: "EU Compliance Module", value: "$450K", timeline: "Q2 2025", probability: "75%", status: "in-progress" },
+    { id: 2, name: "AI Customer Service Add-on", value: "$280K", timeline: "Q3 2025", probability: "40%", status: "discovery" },
+    { id: 3, name: "Enterprise License Expansion", value: "$600K", timeline: "Q4 2025", probability: "60%", status: "proposal" },
+  ]);
   const [coreTeam, setCoreTeam] = useState([
     { id: 1, name: "Sarah Chen", role: "account-manager" },
     { id: 2, name: "Michael Torres", role: "technical-account-manager" },
@@ -103,6 +108,18 @@ export const OurStrategy = () => {
     setAdvantages(advantages.map(a => a.id === id ? { ...a, text } : a));
   };
 
+  const addOpportunity = () => {
+    setOpportunities([...opportunities, { id: Date.now(), name: "", value: "", timeline: "", probability: "", status: "discovery" }]);
+  };
+
+  const removeOpportunity = (id: number) => {
+    setOpportunities(opportunities.filter(o => o.id !== id));
+  };
+
+  const updateOpportunity = (id: number, field: string, value: string) => {
+    setOpportunities(opportunities.map(o => o.id === id ? { ...o, [field]: value } : o));
+  };
+
   return (
     <SectionCard title="Our Strategy" badge={
       <span className="text-xs text-muted-foreground font-normal">How we win & grow this account</span>
@@ -135,32 +152,88 @@ export const OurStrategy = () => {
                   <th>Timeline</th>
                   <th>Probability</th>
                   <th>Status</th>
+                  <th className="w-10"></th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td className="font-medium">EU Compliance Module</td>
-                  <td>$450K</td>
-                  <td>Q2 2025</td>
-                  <td>75%</td>
-                  <td><Badge className="status-pill status-active">In Progress</Badge></td>
-                </tr>
-                <tr>
-                  <td className="font-medium">AI Customer Service Add-on</td>
-                  <td>$280K</td>
-                  <td>Q3 2025</td>
-                  <td>40%</td>
-                  <td><Badge className="status-pill bg-muted text-muted-foreground">Discovery</Badge></td>
-                </tr>
-                <tr>
-                  <td className="font-medium">Enterprise License Expansion</td>
-                  <td>$600K</td>
-                  <td>Q4 2025</td>
-                  <td>60%</td>
-                  <td><Badge className="status-pill status-active">Proposal</Badge></td>
-                </tr>
+                {opportunities.map((opp) => (
+                  <tr key={opp.id} className="group">
+                    <td>
+                      <Input
+                        value={opp.name}
+                        onChange={(e) => updateOpportunity(opp.id, "name", e.target.value)}
+                        placeholder="Opportunity name"
+                        className="h-8 text-sm font-medium bg-background border-0 focus-visible:ring-1"
+                      />
+                    </td>
+                    <td>
+                      <Input
+                        value={opp.value}
+                        onChange={(e) => updateOpportunity(opp.id, "value", e.target.value)}
+                        placeholder="$0"
+                        className="h-8 text-sm bg-background border-0 focus-visible:ring-1 w-24"
+                      />
+                    </td>
+                    <td>
+                      <Input
+                        value={opp.timeline}
+                        onChange={(e) => updateOpportunity(opp.id, "timeline", e.target.value)}
+                        placeholder="Q1 2025"
+                        className="h-8 text-sm bg-background border-0 focus-visible:ring-1 w-24"
+                      />
+                    </td>
+                    <td>
+                      <Input
+                        value={opp.probability}
+                        onChange={(e) => updateOpportunity(opp.id, "probability", e.target.value)}
+                        placeholder="0%"
+                        className="h-8 text-sm bg-background border-0 focus-visible:ring-1 w-16"
+                      />
+                    </td>
+                    <td>
+                      <Select value={opp.status} onValueChange={(v) => updateOpportunity(opp.id, "status", v)}>
+                        <SelectTrigger className="h-8 text-xs bg-background border-0 w-28">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover border shadow-lg z-50">
+                          <SelectItem value="discovery">
+                            <Badge className="status-pill bg-muted text-muted-foreground">Discovery</Badge>
+                          </SelectItem>
+                          <SelectItem value="in-progress">
+                            <Badge className="status-pill status-active">In Progress</Badge>
+                          </SelectItem>
+                          <SelectItem value="proposal">
+                            <Badge className="status-pill status-active">Proposal</Badge>
+                          </SelectItem>
+                          <SelectItem value="negotiation">
+                            <Badge className="status-pill bg-warning/20 text-warning">Negotiation</Badge>
+                          </SelectItem>
+                          <SelectItem value="closed-won">
+                            <Badge className="status-pill bg-success/20 text-success">Closed Won</Badge>
+                          </SelectItem>
+                          <SelectItem value="closed-lost">
+                            <Badge className="status-pill bg-destructive/20 text-destructive">Closed Lost</Badge>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </td>
+                    <td>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removeOpportunity(opp.id)}
+                      >
+                        <X className="w-4 h-4 text-muted-foreground" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
+            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground mt-2" onClick={addOpportunity}>
+              <Plus className="w-3 h-3 mr-1" /> Add opportunity
+            </Button>
           </div>
         </div>
 
