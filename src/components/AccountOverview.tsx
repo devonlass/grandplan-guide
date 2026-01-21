@@ -1,7 +1,19 @@
 import { SectionCard } from "./SectionCard";
 import { FieldGroup } from "./FieldGroup";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Calendar, DollarSign, TrendingUp, Users } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Building2, Calendar, DollarSign, TrendingUp, Users, Anchor } from "lucide-react";
+
+const industries = [
+  { value: "ship-owner", label: "Ship Owner" },
+  { value: "ship-manager", label: "Ship Manager" },
+  { value: "shipyard", label: "Shipyard" },
+  { value: "oil-gas", label: "Oil & Gas" },
+  { value: "partner", label: "Partner" },
+  { value: "government", label: "Government" },
+  { value: "defense", label: "Defense" },
+  { value: "land-based", label: "Land Based" },
+];
 
 export const AccountOverview = () => {
   return (
@@ -45,7 +57,21 @@ export const AccountOverview = () => {
         </FieldGroup>
 
         <FieldGroup label="Industry" hubspotField="industry">
-          <span>Enterprise Software</span>
+          <Select defaultValue="ship-owner">
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select industry" />
+            </SelectTrigger>
+            <SelectContent>
+              {industries.map((industry) => (
+                <SelectItem key={industry.value} value={industry.value}>
+                  <span className="flex items-center gap-2">
+                    <Anchor className="w-3 h-3 text-muted-foreground" />
+                    {industry.label}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </FieldGroup>
 
         <FieldGroup label="Account Tier" hubspotField="account_tier">
