@@ -26,6 +26,15 @@ const products = [
   { id: "compliance", label: "Compliance", active: false },
 ];
 
+const vesselTypes = [
+  { type: "Tankers", count: 42, color: "hsl(var(--accent))" },
+  { type: "Bulk Carriers", count: 35, color: "hsl(var(--primary))" },
+  { type: "Container Ships", count: 24, color: "hsl(var(--warning))" },
+  { type: "Offshore Vessels", count: 12, color: "hsl(var(--success))" },
+  { type: "Gas Carriers", count: 8, color: "hsl(var(--destructive))" },
+  { type: "Other", count: 3, color: "hsl(var(--muted-foreground))" },
+];
+
 export const AccountOverview = () => {
   return (
     <SectionCard title="Account Overview">
@@ -106,6 +115,52 @@ export const AccountOverview = () => {
             <span className="text-sm font-medium">82/100</span>
           </div>
         </FieldGroup>
+
+        {/* Vessel Type Breakdown */}
+        <div className="lg:col-span-4 pt-4 border-t border-border">
+          <FieldGroup label="Fleet Composition by Vessel Type" hubspotField="vessel_types">
+            <div className="mt-3 space-y-3">
+              {/* Stacked bar visualization */}
+              <div className="h-4 rounded-full overflow-hidden flex">
+                {vesselTypes.map((vessel, index) => {
+                  const totalVessels = vesselTypes.reduce((sum, v) => sum + v.count, 0);
+                  const percentage = (vessel.count / totalVessels) * 100;
+                  return (
+                    <div
+                      key={vessel.type}
+                      className="h-full transition-all hover:opacity-80"
+                      style={{ 
+                        width: `${percentage}%`, 
+                        backgroundColor: vessel.color,
+                      }}
+                      title={`${vessel.type}: ${vessel.count} vessels (${percentage.toFixed(1)}%)`}
+                    />
+                  );
+                })}
+              </div>
+              
+              {/* Legend */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                {vesselTypes.map((vessel) => {
+                  const totalVessels = vesselTypes.reduce((sum, v) => sum + v.count, 0);
+                  const percentage = (vessel.count / totalVessels) * 100;
+                  return (
+                    <div key={vessel.type} className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-sm flex-shrink-0" 
+                        style={{ backgroundColor: vessel.color }}
+                      />
+                      <div className="text-xs">
+                        <span className="font-medium">{vessel.count}</span>
+                        <span className="text-muted-foreground ml-1">{vessel.type}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </FieldGroup>
+        </div>
 
         {/* Products/Modules Section */}
         <div className="lg:col-span-4 pt-4 border-t border-border">
