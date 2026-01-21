@@ -72,6 +72,44 @@ export const OurStrategy = () => {
 
   const currentPlay = playTypes.find(p => p.value === selectedPlay);
 
+  // Parse value string to number (handles $, K, M suffixes)
+  const parseValue = (valueStr: string): number => {
+    const cleaned = valueStr.replace(/[$,\s]/g, '').toUpperCase();
+    const multipliers: Record<string, number> = { K: 1000, M: 1000000 };
+    const match = cleaned.match(/^([\d.]+)([KM])?$/);
+    if (!match) return 0;
+    const num = parseFloat(match[1]);
+    const suffix = match[2] as keyof typeof multipliers;
+    return suffix ? num * multipliers[suffix] : num;
+  };
+
+  // Parse probability string to decimal
+  const parseProbability = (probStr: string): number => {
+    const num = parseFloat(probStr.replace('%', ''));
+    return isNaN(num) ? 0 : num / 100;
+  };
+
+  // Format number as currency
+  const formatCurrency = (value: number): string => {
+    if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+    if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
+    return `$${value.toFixed(0)}`;
+  };
+
+  // Calculate pipeline metrics
+  const pipelineMetrics = opportunities.reduce(
+    (acc, opp) => {
+      const value = parseValue(opp.value);
+      const probability = parseProbability(opp.probability);
+      const weighted = value * probability;
+      return {
+        totalValue: acc.totalValue + value,
+        weightedValue: acc.weightedValue + weighted,
+      };
+    },
+    { totalValue: 0, weightedValue: 0 }
+  );
+
   const addTeamMember = () => {
     setCoreTeam([...coreTeam, { id: Date.now(), name: "", role: "" }]);
   };
@@ -142,7 +180,19 @@ export const OurStrategy = () => {
 
         {/* Growth Opportunities */}
         <div>
-          <h4 className="text-sm font-medium mb-4">Growth Opportunities</h4>
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-sm font-medium">Growth Opportunities</h4>
+            <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Total Pipeline:</span>
+                <span className="font-semibold">{formatCurrency(pipelineMetrics.totalValue)}</span>
+              </div>
+              <div className="flex items-center gap-2 bg-primary/10 px-3 py-1 rounded-full">
+                <span className="text-muted-foreground">Weighted:</span>
+                <span className="font-semibold text-primary">{formatCurrency(pipelineMetrics.weightedValue)}</span>
+              </div>
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
