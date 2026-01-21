@@ -2,9 +2,11 @@ import { useState } from "react";
 import { SectionCard } from "./SectionCard";
 import { FieldGroup } from "./FieldGroup";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, ArrowRight, Zap, Target, Shield, TrendingUp, Users, RefreshCw } from "lucide-react";
+import { CheckCircle2, ArrowRight, Zap, Target, Shield, TrendingUp, Users, RefreshCw, Plus, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const playTypes = [
   { value: "land-expand", label: "Land & Expand", icon: TrendingUp, description: "Win initial deal, then grow footprint" },
@@ -19,8 +21,44 @@ export const OurStrategy = () => {
   const [milestones, setMilestones] = useState(
     "Secure EU Compliance win → Build case for AI add-on → Position for license expansion at renewal"
   );
+  const [valueProposition, setValueProposition] = useState(
+    "Accelerate Acme's European expansion with our proven compliance automation suite, reducing time-to-market by 40% while cutting regulatory risk. Unlike competitors, our platform integrates natively with their existing SAP infrastructure."
+  );
+  const [threats, setThreats] = useState([
+    { id: 1, competitor: "TechCorp", note: "Aggressive pricing, but weak on compliance", level: "high" },
+    { id: 2, competitor: "CloudFirst", note: "Strong in EU, pursuing this account", level: "medium" },
+  ]);
+  const [advantages, setAdvantages] = useState([
+    { id: 1, text: "5-year relationship, trusted advisor status" },
+    { id: 2, text: "Deep SAP integration expertise" },
+    { id: 3, text: "Proven ROI: 3.2x documented return" },
+  ]);
 
   const currentPlay = playTypes.find(p => p.value === selectedPlay);
+
+  const addThreat = () => {
+    setThreats([...threats, { id: Date.now(), competitor: "", note: "", level: "medium" }]);
+  };
+
+  const removeThreat = (id: number) => {
+    setThreats(threats.filter(t => t.id !== id));
+  };
+
+  const updateThreat = (id: number, field: string, value: string) => {
+    setThreats(threats.map(t => t.id === id ? { ...t, [field]: value } : t));
+  };
+
+  const addAdvantage = () => {
+    setAdvantages([...advantages, { id: Date.now(), text: "" }]);
+  };
+
+  const removeAdvantage = (id: number) => {
+    setAdvantages(advantages.filter(a => a.id !== id));
+  };
+
+  const updateAdvantage = (id: number, text: string) => {
+    setAdvantages(advantages.map(a => a.id === id ? { ...a, text } : a));
+  };
 
   return (
     <SectionCard title="Our Strategy" badge={
@@ -33,11 +71,13 @@ export const OurStrategy = () => {
             <Zap className="w-4 h-4" />
             Unique Value Proposition
           </h4>
-          <p className="text-sm leading-relaxed">
-            Accelerate Acme's European expansion with our proven compliance automation suite, 
-            reducing time-to-market by 40% while cutting regulatory risk. Unlike competitors, 
-            our platform integrates natively with their existing SAP infrastructure.
-          </p>
+          <Textarea
+            value={valueProposition}
+            onChange={(e) => setValueProposition(e.target.value)}
+            placeholder="Describe what makes your solution uniquely valuable to this account..."
+            className="bg-background/50 resize-none text-sm leading-relaxed min-h-[80px]"
+            rows={3}
+          />
         </div>
 
         {/* Growth Opportunities */}
@@ -84,33 +124,78 @@ export const OurStrategy = () => {
         {/* Competitive Position */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <FieldGroup label="Competitive Threats">
-            <ul className="space-y-2 text-sm">
-              <li className="flex items-start gap-2">
-                <span className="text-destructive mt-1">•</span>
-                <span><strong>TechCorp:</strong> Aggressive pricing, but weak on compliance</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-warning mt-1">•</span>
-                <span><strong>CloudFirst:</strong> Strong in EU, pursuing this account</span>
-              </li>
-            </ul>
+            <div className="space-y-2">
+              {threats.map((threat) => (
+                <div key={threat.id} className="flex items-start gap-2 group">
+                  <Select value={threat.level} onValueChange={(v) => updateThreat(threat.id, "level", v)}>
+                    <SelectTrigger className="w-16 h-8 text-xs bg-background">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border shadow-lg z-50">
+                      <SelectItem value="high">
+                        <span className="text-destructive">●</span>
+                      </SelectItem>
+                      <SelectItem value="medium">
+                        <span className="text-warning">●</span>
+                      </SelectItem>
+                      <SelectItem value="low">
+                        <span className="text-muted-foreground">●</span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    value={threat.competitor}
+                    onChange={(e) => updateThreat(threat.id, "competitor", e.target.value)}
+                    placeholder="Competitor"
+                    className="w-24 h-8 text-sm font-medium bg-background"
+                  />
+                  <Input
+                    value={threat.note}
+                    onChange={(e) => updateThreat(threat.id, "note", e.target.value)}
+                    placeholder="Threat details..."
+                    className="flex-1 h-8 text-sm bg-background"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => removeThreat(threat.id)}
+                  >
+                    <X className="w-4 h-4 text-muted-foreground" />
+                  </Button>
+                </div>
+              ))}
+              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={addThreat}>
+                <Plus className="w-3 h-3 mr-1" /> Add threat
+              </Button>
+            </div>
           </FieldGroup>
 
           <FieldGroup label="Our Advantages">
-            <ul className="space-y-2 text-sm">
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
-                <span>5-year relationship, trusted advisor status</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
-                <span>Deep SAP integration expertise</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
-                <span>Proven ROI: 3.2x documented return</span>
-              </li>
-            </ul>
+            <div className="space-y-2">
+              {advantages.map((adv) => (
+                <div key={adv.id} className="flex items-center gap-2 group">
+                  <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
+                  <Input
+                    value={adv.text}
+                    onChange={(e) => updateAdvantage(adv.id, e.target.value)}
+                    placeholder="Describe advantage..."
+                    className="flex-1 h-8 text-sm bg-background"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => removeAdvantage(adv.id)}
+                  >
+                    <X className="w-4 h-4 text-muted-foreground" />
+                  </Button>
+                </div>
+              ))}
+              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={addAdvantage}>
+                <Plus className="w-3 h-3 mr-1" /> Add advantage
+              </Button>
+            </div>
           </FieldGroup>
         </div>
 
