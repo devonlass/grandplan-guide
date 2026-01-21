@@ -1,9 +1,27 @@
+import { useState } from "react";
 import { SectionCard } from "./SectionCard";
 import { FieldGroup } from "./FieldGroup";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, ArrowRight, Zap } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { CheckCircle2, ArrowRight, Zap, Target, Shield, TrendingUp, Users, RefreshCw } from "lucide-react";
+
+const playTypes = [
+  { value: "land-expand", label: "Land & Expand", icon: TrendingUp, description: "Win initial deal, then grow footprint" },
+  { value: "defend-grow", label: "Defend & Grow", icon: Shield, description: "Protect base while expanding value" },
+  { value: "cross-sell", label: "Cross-sell", icon: Target, description: "Introduce new products/modules" },
+  { value: "retention", label: "Retention", icon: RefreshCw, description: "Secure renewal, minimize churn risk" },
+  { value: "expand-users", label: "Expand Users", icon: Users, description: "Grow user base within account" },
+];
 
 export const OurStrategy = () => {
+  const [selectedPlay, setSelectedPlay] = useState("land-expand");
+  const [milestones, setMilestones] = useState(
+    "Secure EU Compliance win → Build case for AI add-on → Position for license expansion at renewal"
+  );
+
+  const currentPlay = playTypes.find(p => p.value === selectedPlay);
+
   return (
     <SectionCard title="Our Strategy" badge={
       <span className="text-xs text-muted-foreground font-normal">How we win & grow this account</span>
@@ -96,17 +114,73 @@ export const OurStrategy = () => {
           </FieldGroup>
         </div>
 
-        {/* Strategic Play */}
-        <div className="bg-muted/30 rounded-lg p-4">
-          <h4 className="text-sm font-medium mb-3">This Quarter's Strategic Play</h4>
-          <div className="flex items-center gap-3 text-sm">
-            <span className="bg-accent/10 text-accent px-3 py-1 rounded-full font-medium">
-              Land & Expand
-            </span>
-            <ArrowRight className="w-4 h-4 text-muted-foreground" />
-            <span className="text-muted-foreground">
-              Secure EU Compliance win → Build case for AI add-on → Position for license expansion at renewal
-            </span>
+        {/* Strategic Play - Editable */}
+        <div className="bg-muted/30 rounded-lg p-4 space-y-4">
+          <h4 className="text-sm font-medium">This Quarter's Strategic Play</h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Play Type Selector */}
+            <div>
+              <label className="text-xs text-muted-foreground mb-2 block">Play Type</label>
+              <Select value={selectedPlay} onValueChange={setSelectedPlay}>
+                <SelectTrigger className="w-full bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border shadow-lg z-50">
+                  {playTypes.map((play) => (
+                    <SelectItem key={play.value} value={play.value}>
+                      <div className="flex items-center gap-2">
+                        <play.icon className="w-4 h-4 text-accent" />
+                        <span>{play.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {currentPlay && (
+                <p className="text-xs text-muted-foreground mt-1.5">{currentPlay.description}</p>
+              )}
+            </div>
+
+            {/* Current Play Display */}
+            <div className="flex items-center justify-center">
+              {currentPlay && (
+                <div className="flex items-center gap-2 bg-accent/10 text-accent px-4 py-2 rounded-full">
+                  <currentPlay.icon className="w-4 h-4" />
+                  <span className="font-medium">{currentPlay.label}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Milestone Sequence */}
+          <div>
+            <label className="text-xs text-muted-foreground mb-2 block">
+              Milestone Sequence (use → to separate steps)
+            </label>
+            <Textarea
+              value={milestones}
+              onChange={(e) => setMilestones(e.target.value)}
+              placeholder="Step 1 → Step 2 → Step 3"
+              className="bg-background resize-none text-sm"
+              rows={2}
+            />
+          </div>
+
+          {/* Visual Milestone Display */}
+          <div className="pt-2 border-t border-border/50">
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              {milestones.split("→").map((step, index, arr) => (
+                <span key={index} className="flex items-center gap-2">
+                  <span className="bg-background px-3 py-1 rounded-md border border-border">
+                    {step.trim()}
+                  </span>
+                  {index < arr.length - 1 && (
+                    <ArrowRight className="w-4 h-4 text-accent flex-shrink-0" />
+                  )}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </div>
