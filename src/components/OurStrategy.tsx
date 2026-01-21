@@ -16,6 +16,14 @@ const playTypes = [
   { value: "expand-users", label: "Expand Users", icon: Users, description: "Grow user base within account" },
 ];
 
+const teamRoles = [
+  { value: "account-manager", label: "Account Manager" },
+  { value: "technical-account-manager", label: "Technical Account Manager" },
+  { value: "slt-sponsor", label: "SLT Sponsor" },
+  { value: "customer-support-manager", label: "Customer Support Manager" },
+  { value: "ps-consultant", label: "PS Consultant" },
+];
+
 export const OurStrategy = () => {
   const [selectedPlay, setSelectedPlay] = useState("land-expand");
   const [milestones, setMilestones] = useState(
@@ -34,10 +42,10 @@ export const OurStrategy = () => {
     { id: 3, text: "Proven ROI: 3.2x documented return" },
   ]);
   const [coreTeam, setCoreTeam] = useState([
-    { id: 1, name: "Sarah Chen", role: "Account Manager" },
-    { id: 2, name: "Michael Torres", role: "Solution Architect" },
-    { id: 3, name: "Emma Wilson", role: "Customer Success" },
-    { id: 4, name: "David Kim", role: "Technical Lead" },
+    { id: 1, name: "Sarah Chen", role: "account-manager" },
+    { id: 2, name: "Michael Torres", role: "technical-account-manager" },
+    { id: 3, name: "Emma Wilson", role: "customer-support-manager" },
+    { id: 4, name: "David Kim", role: "ps-consultant" },
   ]);
 
   const currentPlay = playTypes.find(p => p.value === selectedPlay);
@@ -230,12 +238,18 @@ export const OurStrategy = () => {
                     placeholder="Name"
                     className="h-6 text-sm font-medium bg-background px-2"
                   />
-                  <Input
-                    value={member.role}
-                    onChange={(e) => updateTeamMember(member.id, "role", e.target.value)}
-                    placeholder="Role"
-                    className="h-6 text-xs text-muted-foreground bg-background px-2"
-                  />
+                  <Select value={member.role} onValueChange={(v) => updateTeamMember(member.id, "role", v)}>
+                    <SelectTrigger className="h-6 text-xs bg-background px-2">
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border shadow-lg z-50">
+                      {teamRoles.map((role) => (
+                        <SelectItem key={role.value} value={role.value}>
+                          {role.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <Button
                   variant="ghost"
