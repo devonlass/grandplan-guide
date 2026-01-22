@@ -20,7 +20,7 @@ const playTypes = [
 
 const teamRoles = [
   { value: "account-manager", label: "Account Manager" },
-  { value: "technical-account-manager", label: "Technical Account Manager" },
+  { value: "technical-account-manager", label: "Technical Account Manager", hubspotField: "TAM" },
   { value: "slt-sponsor", label: "SLT Sponsor" },
   { value: "customer-support-manager", label: "Customer Support Manager" },
   { value: "ps-consultant", label: "PS Consultant" },
@@ -462,7 +462,7 @@ export const OurStrategy = () => {
         </div>
 
         {/* Core Team */}
-        <FieldGroup label="Core Team">
+        <FieldGroup label="Core Team" hubspotField="TAM">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {coreTeam.map((member) => (
               <div key={member.id} className="flex items-center gap-2 bg-muted/30 rounded-lg p-2 group">
