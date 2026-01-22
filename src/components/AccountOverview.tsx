@@ -101,7 +101,7 @@ export const AccountOverview = () => {
           </Select>
         </FieldGroup>
 
-        <FieldGroup label="Account Tier" hubspotField="account_tier">
+        <FieldGroup label="Account Rank" hubspotField="account_rank">
           <Badge variant="default" className="bg-accent text-accent-foreground">
             Tier 1 - Strategic
           </Badge>
