@@ -7,6 +7,7 @@ import { OurStrategy } from "@/components/OurStrategy";
 import { StakeholderMap } from "@/components/StakeholderMap";
 import { ExecutionPlan } from "@/components/ExecutionPlan";
 import { RisksAndDependencies } from "@/components/RisksAndDependencies";
+import { Attachments } from "@/components/Attachments";
 import { QuarterlyReview } from "@/components/QuarterlyReview";
 import { HubSpotBadge } from "@/components/HubSpotBadge";
 import { Info, PanelLeft } from "lucide-react";
@@ -66,6 +67,10 @@ const Index = () => {
               
               <section id="quarterly-review" className="scroll-mt-6">
                 <QuarterlyReview />
+              </section>
+
+              <section id="attachments" className="scroll-mt-6">
+                <Attachments />
               </section>
             </div>
 
