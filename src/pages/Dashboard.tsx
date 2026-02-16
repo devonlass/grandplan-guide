@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 interface AccountPlan {
   id: string;
   company: string;
-  accountRank: "Platinum" | "Gold" | "Silver" | "Bronze";
+  accountRank: "Strategic" | "Grow" | "Maintain" | "Micro" | "Lose";
   accountManager: string;
   csm: string;
   lastUpdated: string;
@@ -25,7 +25,7 @@ const samplePlans: AccountPlan[] = [
   {
     id: "1",
     company: "Meridian Shipping Co.",
-    accountRank: "Platinum",
+    accountRank: "Strategic",
     accountManager: "Sarah Johnson",
     csm: "David Park",
     lastUpdated: "Jan 12, 2025",
@@ -33,7 +33,7 @@ const samplePlans: AccountPlan[] = [
   {
     id: "2",
     company: "Atlantic Maritime Group",
-    accountRank: "Gold",
+    accountRank: "Grow",
     accountManager: "Sarah Johnson",
     csm: "Emily Rodriguez",
     lastUpdated: "Jan 8, 2025",
@@ -41,7 +41,7 @@ const samplePlans: AccountPlan[] = [
   {
     id: "3",
     company: "Nordic Freight Lines",
-    accountRank: "Silver",
+    accountRank: "Maintain",
     accountManager: "James Mitchell",
     csm: "David Park",
     lastUpdated: "Dec 20, 2024",
@@ -49,7 +49,7 @@ const samplePlans: AccountPlan[] = [
   {
     id: "4",
     company: "Pacific Trade Logistics",
-    accountRank: "Gold",
+    accountRank: "Grow",
     accountManager: "James Mitchell",
     csm: "Emily Rodriguez",
     lastUpdated: "Dec 15, 2024",
@@ -57,7 +57,7 @@ const samplePlans: AccountPlan[] = [
   {
     id: "5",
     company: "Global Vessel Partners",
-    accountRank: "Bronze",
+    accountRank: "Micro",
     accountManager: "Rachel Kim",
     csm: "David Park",
     lastUpdated: "Nov 30, 2024",
@@ -65,7 +65,7 @@ const samplePlans: AccountPlan[] = [
   {
     id: "6",
     company: "Oceanic Supply Chain Ltd.",
-    accountRank: "Platinum",
+    accountRank: "Lose",
     accountManager: "Rachel Kim",
     csm: "Emily Rodriguez",
     lastUpdated: "Jan 10, 2025",
@@ -73,10 +73,11 @@ const samplePlans: AccountPlan[] = [
 ];
 
 const rankColors: Record<AccountPlan["accountRank"], string> = {
-  Platinum: "bg-primary text-primary-foreground",
-  Gold: "bg-warning/15 text-warning",
-  Silver: "bg-muted text-muted-foreground",
-  Bronze: "bg-accent/15 text-accent",
+  Strategic: "bg-primary text-primary-foreground",
+  Grow: "bg-success/15 text-success",
+  Maintain: "bg-warning/15 text-warning",
+  Micro: "bg-muted text-muted-foreground",
+  Lose: "bg-destructive/15 text-destructive",
 };
 
 const Dashboard = () => {
