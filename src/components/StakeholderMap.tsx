@@ -10,6 +10,7 @@ interface Stakeholder {
   sentiment: "positive" | "neutral" | "negative";
   notes: string;
   lastContact: string;
+  contactedBy: string;
 }
 
 const stakeholders: Stakeholder[] = [
@@ -20,6 +21,7 @@ const stakeholders: Stakeholder[] = [
     sentiment: "positive",
     notes: "Strong advocate for our platform. Key sponsor.",
     lastContact: "Jan 10, 2025",
+    contactedBy: "",
   },
   {
     name: "Michael Torres",
@@ -28,6 +30,7 @@ const stakeholders: Stakeholder[] = [
     sentiment: "positive",
     notes: "Impressed with SAP integration demo. Pushing for expansion.",
     lastContact: "Jan 8, 2025",
+    contactedBy: "",
   },
   {
     name: "Lisa Chen",
@@ -36,6 +39,7 @@ const stakeholders: Stakeholder[] = [
     sentiment: "neutral",
     notes: "Focused on cost reduction. Need ROI data for Q2.",
     lastContact: "Dec 15, 2024",
+    contactedBy: "",
   },
   {
     name: "Robert Kim",
@@ -44,6 +48,7 @@ const stakeholders: Stakeholder[] = [
     sentiment: "negative",
     notes: "Concerns about data residency in EU. Requires SOC2 Type II.",
     lastContact: "Dec 20, 2024",
+    contactedBy: "",
   },
   {
     name: "Amanda Foster",
@@ -52,6 +57,7 @@ const stakeholders: Stakeholder[] = [
     sentiment: "positive",
     notes: "Day-to-day contact. Actively promoting internally.",
     lastContact: "Jan 12, 2025",
+    contactedBy: "",
   },
 ];
 
@@ -97,6 +103,7 @@ export const StakeholderMap = () => {
               <th>Sentiment</th>
               <th>Notes</th>
               <th>Last Contact</th>
+              <th>Contacted By</th>
             </tr>
           </thead>
           <tbody>
@@ -130,6 +137,9 @@ export const StakeholderMap = () => {
                 </td>
                 <td>
                   <span className="text-sm text-muted-foreground">{s.lastContact}</span>
+                </td>
+                <td>
+                  <span className="text-sm text-muted-foreground">{s.contactedBy || "—"}</span>
                 </td>
               </tr>
             ))}
