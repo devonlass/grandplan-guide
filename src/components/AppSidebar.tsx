@@ -7,7 +7,8 @@ import {
   AlertTriangle, 
   CalendarCheck,
   FileText,
-  ChevronLeft
+  ChevronLeft,
+  Paperclip
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -31,6 +32,7 @@ const sections = [
   { title: "Execution Plan", id: "execution-plan", icon: ListChecks },
   { title: "Risks & Dependencies", id: "risks-dependencies", icon: AlertTriangle },
   { title: "Quarterly Review", id: "quarterly-review", icon: CalendarCheck },
+  { title: "Attachments", id: "attachments", icon: Paperclip },
 ];
 
 export function AppSidebar() {
