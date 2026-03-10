@@ -3,6 +3,31 @@ import { FieldGroup } from "./FieldGroup";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, ArrowRight, MessageSquare } from "lucide-react";
 
+// Fixed: moved MetricChange above QuarterlyReview so it's defined before use
+const MetricChange = ({ 
+  label, 
+  from, 
+  to, 
+  positive 
+}: { 
+  label: string; 
+  from: string; 
+  to: string; 
+  positive: boolean;
+}) => (
+  <div className="text-center">
+    <div className="text-xs text-muted-foreground mb-1">{label}</div>
+    <div className="flex items-center justify-center gap-2">
+      <span className="text-sm text-muted-foreground">{from}</span>
+      <ArrowRight className="w-3 h-3 text-muted-foreground" />
+      {/* Fixed: replaced text-success with text-green-600 */}
+      <span className={`text-sm font-semibold ${positive ? "text-green-600" : "text-destructive"}`}>
+        {to}
+      </span>
+    </div>
+  </div>
+);
+
 export const QuarterlyReview = () => {
   return (
     <SectionCard 
@@ -14,21 +39,23 @@ export const QuarterlyReview = () => {
         {/* Win/Loss Review */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
-            <h4 className="text-sm font-medium mb-3 flex items-center gap-2 text-success">
+            {/* Fixed: replaced text-success with text-green-600 */}
+            <h4 className="text-sm font-medium mb-3 flex items-center gap-2 text-green-600">
               <CheckCircle2 className="w-4 h-4" />
               What Worked
             </h4>
             <ul className="space-y-2 text-sm">
               <li className="flex items-start gap-2">
-                <span className="text-success mt-1">✓</span>
+                {/* Fixed: replaced text-success with text-green-600 */}
+                <span className="text-green-600 mt-1">✓</span>
                 <span>Executive alignment session drove CTO sponsorship</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-success mt-1">✓</span>
+                <span className="text-green-600 mt-1">✓</span>
                 <span>Technical deep-dive with engineering built credibility</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-success mt-1">✓</span>
+                <span className="text-green-600 mt-1">✓</span>
                 <span>Customer success story from similar enterprise resonated</span>
               </li>
             </ul>
@@ -93,26 +120,3 @@ export const QuarterlyReview = () => {
     </SectionCard>
   );
 };
-
-const MetricChange = ({ 
-  label, 
-  from, 
-  to, 
-  positive 
-}: { 
-  label: string; 
-  from: string; 
-  to: string; 
-  positive: boolean;
-}) => (
-  <div className="text-center">
-    <div className="text-xs text-muted-foreground mb-1">{label}</div>
-    <div className="flex items-center justify-center gap-2">
-      <span className="text-sm text-muted-foreground">{from}</span>
-      <ArrowRight className="w-3 h-3 text-muted-foreground" />
-      <span className={`text-sm font-semibold ${positive ? "text-success" : "text-destructive"}`}>
-        {to}
-      </span>
-    </div>
-  </div>
-);
