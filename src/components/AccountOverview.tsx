@@ -122,7 +122,7 @@ export const AccountOverview = () => {
             <div className="mt-3 space-y-3">
               {/* Stacked bar visualization */}
               <div className="h-4 rounded-full overflow-hidden flex">
-                {vesselTypes.map((vessel, index) => {
+                {vesselTypes.map((vessel) => {
                   const totalVessels = vesselTypes.reduce((sum, v) => sum + v.count, 0);
                   const percentage = (vessel.count / totalVessels) * 100;
                   return (
