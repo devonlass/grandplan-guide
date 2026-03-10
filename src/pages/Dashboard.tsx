@@ -74,8 +74,8 @@ const samplePlans: AccountPlan[] = [
 
 const rankColors: Record<AccountPlan["accountRank"], string> = {
   Strategic: "bg-primary text-primary-foreground",
-  Grow: "bg-success/15 text-success",
-  Maintain: "bg-warning/15 text-warning",
+  Grow: "bg-green-100 text-green-700",       // fixed: replaced bg-success
+  Maintain: "bg-yellow-100 text-yellow-700", // fixed: replaced bg-warning
   Micro: "bg-muted text-muted-foreground",
   Lose: "bg-destructive/15 text-destructive",
 };
@@ -101,6 +101,9 @@ const Dashboard = () => {
     });
   }, [search, filterAM, filterCSM, filterRank]);
 
+  // Fixed: "New Plan" button now navigates to a new plan route
+  const handleNewPlan = () => navigate("/plan/new");
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -113,7 +116,7 @@ const Dashboard = () => {
                 {samplePlans.length} account plans • {filtered.length} shown
               </p>
             </div>
-            <Button className="gap-2">
+            <Button className="gap-2" onClick={handleNewPlan}>
               <Plus className="w-4 h-4" />
               New Plan
             </Button>
