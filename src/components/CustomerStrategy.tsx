@@ -1,9 +1,8 @@
-import type { ReactNode } from "react"; // fixed: explicit ReactNode import
+import type { ReactNode } from "react";
 import { SectionCard } from "./SectionCard";
 import { FieldGroup } from "./FieldGroup";
 import { Target, TrendingUp, AlertTriangle, Lightbulb } from "lucide-react";
 
-// Fixed: moved PriorityItem above CustomerStrategy so it's defined before use
 const PriorityItem = ({ icon, text }: { icon: ReactNode; text: string }) => (
   <li className="flex items-start gap-2 text-sm">
     <span className="mt-0.5 flex-shrink-0">{icon}</span>
@@ -17,7 +16,6 @@ export const CustomerStrategy = () => {
       <span className="text-xs text-muted-foreground font-normal">Their business goals & challenges</span>
     }>
       <div className="space-y-6">
-        {/* Strategic Priorities */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <FieldGroup label="Business Priorities (Next 12 Months)">
             <ul className="space-y-2">
@@ -38,7 +36,6 @@ export const CustomerStrategy = () => {
           <FieldGroup label="Key Challenges & Pain Points">
             <ul className="space-y-2">
               <PriorityItem 
-                {/* Fixed: replaced text-warning with text-yellow-500 */}
                 icon={<AlertTriangle className="w-4 h-4 text-yellow-500" />}
                 text="Legacy system integration slowing digital transformation"
               />
@@ -54,7 +51,6 @@ export const CustomerStrategy = () => {
           </FieldGroup>
         </div>
 
-        {/* Industry Context */}
         <div className="bg-muted/30 rounded-lg p-4">
           <h4 className="text-sm font-medium mb-3">Industry & Competitive Context</h4>
           <p className="text-sm text-muted-foreground leading-relaxed">
@@ -64,7 +60,6 @@ export const CustomerStrategy = () => {
           </p>
         </div>
 
-        {/* Decision Making */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FieldGroup label="Budget Cycle">
             <span className="text-sm">October - December (FY planning)</span>

@@ -10,40 +10,34 @@ import { RisksAndDependencies } from "@/components/RisksAndDependencies";
 import { Attachments } from "@/components/Attachments";
 import { QuarterlyReview } from "@/components/QuarterlyReview";
 import { HubSpotBadge } from "@/components/HubSpotBadge";
+import { useParams } from "react-router-dom";
 import { Info, PanelLeft } from "lucide-react";
 
-const Index = () => {
+const PlanDetail = () => {
+  const { id } = useParams();
+
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
-        
         <div className="flex-1 min-h-screen bg-background">
-          {/* Mobile sidebar trigger */}
           <div className="lg:hidden fixed top-4 left-4 z-50">
             <SidebarTrigger className="bg-primary text-primary-foreground p-2 rounded-md shadow-lg">
               <PanelLeft className="w-5 h-5" />
             </SidebarTrigger>
           </div>
-
           <AccountPlanHeader />
-          
           <main className="max-w-6xl mx-auto px-6 py-8">
-            {/* HubSpot Sync Legend */}
             <div className="mb-6 flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-4 py-2 rounded-lg">
               <Info className="w-4 h-4" />
               <span>Fields marked with</span>
               <HubSpotBadge />
               <span>will sync to your CRM</span>
             </div>
-
-            {/* Sections with IDs for navigation */}
             <div className="space-y-6">
               <section id="account-overview" className="scroll-mt-6">
                 <AccountOverview />
               </section>
-              
-              {/* Two-column layout for strategy sections */}
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 <section id="customer-strategy" className="scroll-mt-6">
                   <CustomerStrategy />
@@ -52,29 +46,22 @@ const Index = () => {
                   <OurStrategy />
                 </section>
               </div>
-              
               <section id="stakeholder-map" className="scroll-mt-6">
                 <StakeholderMap />
               </section>
-              
               <section id="execution-plan" className="scroll-mt-6">
                 <ExecutionPlan />
               </section>
-              
               <section id="risks-dependencies" className="scroll-mt-6">
                 <RisksAndDependencies />
               </section>
-              
               <section id="quarterly-review" className="scroll-mt-6">
                 <QuarterlyReview />
               </section>
-
               <section id="attachments" className="scroll-mt-6">
                 <Attachments />
               </section>
             </div>
-
-            {/* Footer */}
             <footer className="mt-12 pt-6 border-t border-border text-center text-sm text-muted-foreground">
               <p>Strategic Account Plan Template • Update quarterly before business review</p>
             </footer>
@@ -85,4 +72,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default PlanDetail;
