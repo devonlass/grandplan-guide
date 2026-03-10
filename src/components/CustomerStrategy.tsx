@@ -1,6 +1,15 @@
+import type { ReactNode } from "react"; // fixed: explicit ReactNode import
 import { SectionCard } from "./SectionCard";
 import { FieldGroup } from "./FieldGroup";
 import { Target, TrendingUp, AlertTriangle, Lightbulb } from "lucide-react";
+
+// Fixed: moved PriorityItem above CustomerStrategy so it's defined before use
+const PriorityItem = ({ icon, text }: { icon: ReactNode; text: string }) => (
+  <li className="flex items-start gap-2 text-sm">
+    <span className="mt-0.5 flex-shrink-0">{icon}</span>
+    <span>{text}</span>
+  </li>
+);
 
 export const CustomerStrategy = () => {
   return (
@@ -26,19 +35,19 @@ export const CustomerStrategy = () => {
               />
             </ul>
           </FieldGroup>
-
           <FieldGroup label="Key Challenges & Pain Points">
             <ul className="space-y-2">
               <PriorityItem 
-                icon={<AlertTriangle className="w-4 h-4 text-warning" />}
+                {/* Fixed: replaced text-warning with text-yellow-500 */}
+                icon={<AlertTriangle className="w-4 h-4 text-yellow-500" />}
                 text="Legacy system integration slowing digital transformation"
               />
               <PriorityItem 
-                icon={<AlertTriangle className="w-4 h-4 text-warning" />}
+                icon={<AlertTriangle className="w-4 h-4 text-yellow-500" />}
                 text="Talent shortage in cloud engineering"
               />
               <PriorityItem 
-                icon={<AlertTriangle className="w-4 h-4 text-warning" />}
+                icon={<AlertTriangle className="w-4 h-4 text-yellow-500" />}
                 text="Compliance complexity in new markets"
               />
             </ul>
@@ -71,10 +80,3 @@ export const CustomerStrategy = () => {
     </SectionCard>
   );
 };
-
-const PriorityItem = ({ icon, text }: { icon: React.ReactNode; text: string }) => (
-  <li className="flex items-start gap-2 text-sm">
-    <span className="mt-0.5 flex-shrink-0">{icon}</span>
-    <span>{text}</span>
-  </li>
-);
