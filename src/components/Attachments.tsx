@@ -1,6 +1,6 @@
 import { SectionCard } from "./SectionCard";
 import { Paperclip, Upload, FileText, Image, File, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react"; // fixed: added useRef
 import { Button } from "@/components/ui/button";
 
 interface Attachment {
@@ -50,11 +50,45 @@ const getFileIcon = (type: Attachment["type"]) => {
   }
 };
 
+// Fixed: helper to determine file type from extension
+const getFileType = (filename: string): Attachment["type"] => {
+  const ext = filename.split(".").pop()?.toLowerCase();
+  if (["pdf", "doc", "docx", "xlsx", "txt"].includes(ext ?? "")) return "document";
+  if (["png", "jpg", "jpeg", "gif", "webp"].includes(ext ?? "")) return "image";
+  return "other";
+};
+
+// Fixed: helper to format bytes into readable size string
+const formatFileSize = (bytes: number): string => {
+  if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(1)} MB`;
+  if (bytes >= 1_000) return `${Math.round(bytes / 1_000)} KB`;
+  return `${bytes} B`;
+};
+
 export const Attachments = () => {
   const [attachments, setAttachments] = useState<Attachment[]>(initialAttachments);
+  // Fixed: ref to trigger hidden file input
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleRemove = (id: string) => {
     setAttachments((prev) => prev.filter((a) => a.id !== id));
+  };
+
+  // Fixed: handle files selected via the file picker
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    const today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const newAttachments: Attachment[] = files.map((file) => ({
+      id: `${Date.now()}-${file.name}`,
+      name: file.name,
+      type: getFileType(file.name),
+      size: formatFileSize(file.size),
+      uploadedBy: "You",
+      uploadedAt: today,
+    }));
+    setAttachments((prev) => [...prev, ...newAttachments]);
+    // Reset input so the same file can be re-uploaded if needed
+    e.target.value = "";
   };
 
   return (
@@ -67,8 +101,21 @@ export const Attachments = () => {
         </span>
       }
     >
-      {/* Upload area */}
-      <div className="border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center gap-2 text-center mb-4 hover:border-primary/40 transition-colors cursor-pointer">
+      {/* Fixed: hidden file input wired to upload area */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept=".pdf,.doc,.docx,.xlsx,.png,.jpg,.jpeg"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+
+      {/* Upload area - fixed: now triggers file picker on click */}
+      <div
+        className="border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center gap-2 text-center mb-4 hover:border-primary/40 transition-colors cursor-pointer"
+        onClick={() => fileInputRef.current?.click()}
+      >
         <Upload className="w-8 h-8 text-muted-foreground" />
         <p className="text-sm font-medium text-muted-foreground">
           Drag & drop files here, or click to browse
