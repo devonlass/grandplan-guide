@@ -10,6 +10,8 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, XAxis, YAxis, Cell, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
 
+// Fixed: moved all static constants outside component to avoid recreation on every render
+
 const playTypes = [
   { value: "land-expand", label: "Land & Expand", icon: TrendingUp, description: "Win initial deal, then grow footprint" },
   { value: "defend-grow", label: "Defend & Grow", icon: Shield, description: "Protect base while expanding value" },
@@ -20,7 +22,7 @@ const playTypes = [
 
 const teamRoles = [
   { value: "account-manager", label: "Account Manager" },
-  { value: "technical-account-manager", label: "Technical Account Manager", hubspotField: "TAM" },
+  { value: "technical-account-manager", label: "Technical Account Manager" },
   { value: "slt-sponsor", label: "SLT Sponsor" },
   { value: "customer-support-manager", label: "Customer Support Manager" },
   { value: "ps-consultant", label: "PS Consultant" },
@@ -42,6 +44,52 @@ const competitors = [
   { value: "mespas", label: "MESPAS" },
   { value: "other", label: "Other" },
 ];
+
+// Fixed: moved outside component
+const stageOrder = ["new", "qualified", "demo", "proposal-sent", "negotiation"];
+
+const stageLabels: Record<string, string> = {
+  "new": "New",
+  "qualified": "Qualified",
+  "demo": "Demo",
+  "proposal-sent": "Proposal Sent",
+  "negotiation": "Negotiation",
+};
+
+// Fixed: replaced hsl(var(--warning)) and hsl(var(--success)) with standard colours
+const stageColors: Record<string, string> = {
+  "new": "hsl(var(--muted-foreground))",
+  "qualified": "hsl(var(--primary))",
+  "demo": "hsl(var(--primary))",
+  "proposal-sent": "#ca8a04",  // fixed: replaced hsl(var(--warning)) with yellow-600
+  "negotiation": "#16a34a",    // fixed: replaced hsl(var(--success)) with green-600
+};
+
+// Fixed: moved utility functions outside component
+const parseValue = (valueStr: string): number => {
+  const cleaned = valueStr.replace(/[$,\s]/g, '').toUpperCase();
+  const multipliers: Record<string, number> = { K: 1000, M: 1000000 };
+  const match = cleaned.match(/^([\d.]+)([KM])?$/);
+  if (!match) return 0;
+  const num = parseFloat(match[1]);
+  const suffix = match[2] as keyof typeof multipliers;
+  return suffix ? num * multipliers[suffix] : num;
+};
+
+const parseProbability = (probStr: string): number => {
+  const num = parseFloat(probStr.replace('%', ''));
+  return isNaN(num) ? 0 : num / 100;
+};
+
+const formatCurrency = (value: number): string => {
+  if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+  if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
+  return `$${value.toFixed(0)}`;
+};
+
+// Fixed: use a consistent number type for ids throughout
+let nextId = 10; // start above initial item ids to avoid collisions
+const getNextId = () => ++nextId;
 
 export const OurStrategy = () => {
   const [selectedPlay, setSelectedPlay] = useState("land-expand");
@@ -74,79 +122,33 @@ export const OurStrategy = () => {
 
   const currentPlay = playTypes.find(p => p.value === selectedPlay);
 
-  // Parse value string to number (handles $, K, M suffixes)
-  const parseValue = (valueStr: string): number => {
-    const cleaned = valueStr.replace(/[$,\s]/g, '').toUpperCase();
-    const multipliers: Record<string, number> = { K: 1000, M: 1000000 };
-    const match = cleaned.match(/^([\d.]+)([KM])?$/);
-    if (!match) return 0;
-    const num = parseFloat(match[1]);
-    const suffix = match[2] as keyof typeof multipliers;
-    return suffix ? num * multipliers[suffix] : num;
-  };
-
-  // Parse probability string to decimal
-  const parseProbability = (probStr: string): number => {
-    const num = parseFloat(probStr.replace('%', ''));
-    return isNaN(num) ? 0 : num / 100;
-  };
-
-  // Format number as currency
-  const formatCurrency = (value: number): string => {
-    if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
-    if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
-    return `$${value.toFixed(0)}`;
-  };
-
-  // Calculate pipeline metrics
   const pipelineMetrics = opportunities.reduce(
     (acc, opp) => {
       const value = parseValue(opp.value);
       const probability = parseProbability(opp.probability);
-      const weighted = value * probability;
       return {
         totalValue: acc.totalValue + value,
-        weightedValue: acc.weightedValue + weighted,
+        weightedValue: acc.weightedValue + value * probability,
       };
     },
     { totalValue: 0, weightedValue: 0 }
   );
 
-  // Pipeline chart data - aggregate by stage
-  const stageOrder = ["new", "qualified", "demo", "proposal-sent", "negotiation"];
-  const stageLabels: Record<string, string> = {
-    "new": "New",
-    "qualified": "Qualified",
-    "demo": "Demo",
-    "proposal-sent": "Proposal Sent",
-    "negotiation": "Negotiation",
-  };
-  const stageColors: Record<string, string> = {
-    "new": "hsl(var(--muted-foreground))",
-    "qualified": "hsl(var(--primary))",
-    "demo": "hsl(var(--primary))",
-    "proposal-sent": "hsl(var(--warning))",
-    "negotiation": "hsl(var(--success))",
-  };
-
+  // Fixed: dependencies now accurate since helpers are outside component
   const pipelineChartData = useMemo(() => {
     const stageMap: Record<string, { total: number; weighted: number; count: number }> = {};
-    
     stageOrder.forEach(stage => {
       stageMap[stage] = { total: 0, weighted: 0, count: 0 };
     });
-
     opportunities.forEach(opp => {
       const value = parseValue(opp.value);
       const probability = parseProbability(opp.probability);
-      const weighted = value * probability;
       if (stageMap[opp.status]) {
         stageMap[opp.status].total += value;
-        stageMap[opp.status].weighted += weighted;
+        stageMap[opp.status].weighted += value * probability;
         stageMap[opp.status].count += 1;
       }
     });
-
     return stageOrder
       .filter(stage => stageMap[stage].count > 0)
       .map(stage => ({
@@ -160,59 +162,28 @@ export const OurStrategy = () => {
   }, [opportunities]);
 
   const chartConfig = {
-    weighted: {
-      label: "Weighted Value",
-      color: "hsl(var(--primary))",
-    },
+    weighted: { label: "Weighted Value", color: "hsl(var(--primary))" },
   };
 
-  const addTeamMember = () => {
-    setCoreTeam([...coreTeam, { id: Date.now(), name: "", role: "" }]);
-  };
+  const addTeamMember = () => setCoreTeam(prev => [...prev, { id: getNextId(), name: "", role: "" }]);
+  const removeTeamMember = (id: number) => setCoreTeam(prev => prev.filter(m => m.id !== id));
+  const updateTeamMember = (id: number, field: string, value: string) =>
+    setCoreTeam(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
 
-  const removeTeamMember = (id: number) => {
-    setCoreTeam(coreTeam.filter(m => m.id !== id));
-  };
+  const addThreat = () => setThreats(prev => [...prev, { id: getNextId(), competitor: "", note: "", level: "medium" }]);
+  const removeThreat = (id: number) => setThreats(prev => prev.filter(t => t.id !== id));
+  const updateThreat = (id: number, field: string, value: string) =>
+    setThreats(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
 
-  const updateTeamMember = (id: number, field: string, value: string) => {
-    setCoreTeam(coreTeam.map(m => m.id === id ? { ...m, [field]: value } : m));
-  };
+  const addAdvantage = () => setAdvantages(prev => [...prev, { id: getNextId(), text: "" }]);
+  const removeAdvantage = (id: number) => setAdvantages(prev => prev.filter(a => a.id !== id));
+  const updateAdvantage = (id: number, text: string) =>
+    setAdvantages(prev => prev.map(a => a.id === id ? { ...a, text } : a));
 
-  const addThreat = () => {
-    setThreats([...threats, { id: Date.now(), competitor: "", note: "", level: "medium" }]);
-  };
-
-  const removeThreat = (id: number) => {
-    setThreats(threats.filter(t => t.id !== id));
-  };
-
-  const updateThreat = (id: number, field: string, value: string) => {
-    setThreats(threats.map(t => t.id === id ? { ...t, [field]: value } : t));
-  };
-
-  const addAdvantage = () => {
-    setAdvantages([...advantages, { id: Date.now(), text: "" }]);
-  };
-
-  const removeAdvantage = (id: number) => {
-    setAdvantages(advantages.filter(a => a.id !== id));
-  };
-
-  const updateAdvantage = (id: number, text: string) => {
-    setAdvantages(advantages.map(a => a.id === id ? { ...a, text } : a));
-  };
-
-  const addOpportunity = () => {
-    setOpportunities([...opportunities, { id: Date.now(), name: "", value: "", timeline: "", probability: "", status: "new" }]);
-  };
-
-  const removeOpportunity = (id: number) => {
-    setOpportunities(opportunities.filter(o => o.id !== id));
-  };
-
-  const updateOpportunity = (id: number, field: string, value: string) => {
-    setOpportunities(opportunities.map(o => o.id === id ? { ...o, [field]: value } : o));
-  };
+  const addOpportunity = () => setOpportunities(prev => [...prev, { id: getNextId(), name: "", value: "", timeline: "", probability: "", status: "new" }]);
+  const removeOpportunity = (id: number) => setOpportunities(prev => prev.filter(o => o.id !== id));
+  const updateOpportunity = (id: number, field: string, value: string) =>
+    setOpportunities(prev => prev.map(o => o.id === id ? { ...o, [field]: value } : o));
 
   return (
     <SectionCard title="Our Strategy" badge={
@@ -250,24 +221,16 @@ export const OurStrategy = () => {
             </div>
           </div>
 
-          {/* Pipeline Chart */}
           {pipelineChartData.length > 0 && (
             <div className="mb-6 p-4 bg-muted/20 rounded-lg border border-border/50">
               <h5 className="text-xs font-medium text-muted-foreground mb-3">Pipeline by Stage (Weighted Value)</h5>
               <ChartContainer config={chartConfig} className="h-[140px] w-full">
                 <BarChart data={pipelineChartData} layout="vertical" margin={{ left: 0, right: 40, top: 0, bottom: 0 }}>
                   <XAxis type="number" hide />
-                  <YAxis 
-                    type="category" 
-                    dataKey="label" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    width={80}
-                    tick={{ fontSize: 11 }}
-                  />
-                  <ChartTooltip 
+                  <YAxis type="category" dataKey="label" axisLine={false} tickLine={false} width={80} tick={{ fontSize: 11 }} />
+                  <ChartTooltip
                     content={
-                      <ChartTooltipContent 
+                      <ChartTooltipContent
                         formatter={(value, name, item) => (
                           <div className="flex flex-col gap-1">
                             <span className="font-medium">{formatCurrency(item.payload.weighted)} weighted</span>
@@ -286,6 +249,7 @@ export const OurStrategy = () => {
               </ChartContainer>
             </div>
           )}
+
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
@@ -302,36 +266,16 @@ export const OurStrategy = () => {
                 {opportunities.map((opp) => (
                   <tr key={opp.id} className="group">
                     <td>
-                      <Input
-                        value={opp.name}
-                        onChange={(e) => updateOpportunity(opp.id, "name", e.target.value)}
-                        placeholder="Opportunity name"
-                        className="h-8 text-sm font-medium bg-background border-0 focus-visible:ring-1"
-                      />
+                      <Input value={opp.name} onChange={(e) => updateOpportunity(opp.id, "name", e.target.value)} placeholder="Opportunity name" className="h-8 text-sm font-medium bg-background border-0 focus-visible:ring-1" />
                     </td>
                     <td>
-                      <Input
-                        value={opp.value}
-                        onChange={(e) => updateOpportunity(opp.id, "value", e.target.value)}
-                        placeholder="$0"
-                        className="h-8 text-sm bg-background border-0 focus-visible:ring-1 w-24"
-                      />
+                      <Input value={opp.value} onChange={(e) => updateOpportunity(opp.id, "value", e.target.value)} placeholder="$0" className="h-8 text-sm bg-background border-0 focus-visible:ring-1 w-24" />
                     </td>
                     <td>
-                      <Input
-                        value={opp.timeline}
-                        onChange={(e) => updateOpportunity(opp.id, "timeline", e.target.value)}
-                        placeholder="Q1 2025"
-                        className="h-8 text-sm bg-background border-0 focus-visible:ring-1 w-24"
-                      />
+                      <Input value={opp.timeline} onChange={(e) => updateOpportunity(opp.id, "timeline", e.target.value)} placeholder="Q1 2025" className="h-8 text-sm bg-background border-0 focus-visible:ring-1 w-24" />
                     </td>
                     <td>
-                      <Input
-                        value={opp.probability}
-                        onChange={(e) => updateOpportunity(opp.id, "probability", e.target.value)}
-                        placeholder="0%"
-                        className="h-8 text-sm bg-background border-0 focus-visible:ring-1 w-16"
-                      />
+                      <Input value={opp.probability} onChange={(e) => updateOpportunity(opp.id, "probability", e.target.value)} placeholder="0%" className="h-8 text-sm bg-background border-0 focus-visible:ring-1 w-16" />
                     </td>
                     <td>
                       <Select value={opp.status} onValueChange={(v) => updateOpportunity(opp.id, "status", v)}>
@@ -348,22 +292,19 @@ export const OurStrategy = () => {
                           <SelectItem value="demo">
                             <Badge className="status-pill status-active">Demo</Badge>
                           </SelectItem>
+                          {/* Fixed: replaced bg-warning/text-warning with standard colours */}
                           <SelectItem value="proposal-sent">
-                            <Badge className="status-pill bg-warning/20 text-warning">Proposal Sent</Badge>
+                            <Badge className="status-pill bg-yellow-100 text-yellow-700">Proposal Sent</Badge>
                           </SelectItem>
+                          {/* Fixed: replaced bg-success/text-success with standard colours */}
                           <SelectItem value="negotiation">
-                            <Badge className="status-pill bg-success/20 text-success">Negotiation</Badge>
+                            <Badge className="status-pill bg-green-100 text-green-700">Negotiation</Badge>
                           </SelectItem>
                         </SelectContent>
                       </Select>
                     </td>
                     <td>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removeOpportunity(opp.id)}
-                      >
+                      <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeOpportunity(opp.id)}>
                         <X className="w-4 h-4 text-muted-foreground" />
                       </Button>
                     </td>
@@ -391,8 +332,9 @@ export const OurStrategy = () => {
                       <SelectItem value="high">
                         <span className="text-destructive">●</span>
                       </SelectItem>
+                      {/* Fixed: replaced text-warning with text-yellow-500 */}
                       <SelectItem value="medium">
-                        <span className="text-warning">●</span>
+                        <span className="text-yellow-500">●</span>
                       </SelectItem>
                       <SelectItem value="low">
                         <span className="text-muted-foreground">●</span>
@@ -405,24 +347,12 @@ export const OurStrategy = () => {
                     </SelectTrigger>
                     <SelectContent className="bg-popover border shadow-lg z-50">
                       {competitors.map((comp) => (
-                        <SelectItem key={comp.value} value={comp.value}>
-                          {comp.label}
-                        </SelectItem>
+                        <SelectItem key={comp.value} value={comp.value}>{comp.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <Input
-                    value={threat.note}
-                    onChange={(e) => updateThreat(threat.id, "note", e.target.value)}
-                    placeholder="Threat details..."
-                    className="flex-1 h-8 text-sm bg-background"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => removeThreat(threat.id)}
-                  >
+                  <Input value={threat.note} onChange={(e) => updateThreat(threat.id, "note", e.target.value)} placeholder="Threat details..." className="flex-1 h-8 text-sm bg-background" />
+                  <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeThreat(threat.id)}>
                     <X className="w-4 h-4 text-muted-foreground" />
                   </Button>
                 </div>
@@ -437,19 +367,10 @@ export const OurStrategy = () => {
             <div className="space-y-2">
               {advantages.map((adv) => (
                 <div key={adv.id} className="flex items-center gap-2 group">
-                  <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
-                  <Input
-                    value={adv.text}
-                    onChange={(e) => updateAdvantage(adv.id, e.target.value)}
-                    placeholder="Describe advantage..."
-                    className="flex-1 h-8 text-sm bg-background"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => removeAdvantage(adv.id)}
-                  >
+                  {/* Fixed: replaced text-success with text-green-600 */}
+                  <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  <Input value={adv.text} onChange={(e) => updateAdvantage(adv.id, e.target.value)} placeholder="Describe advantage..." className="flex-1 h-8 text-sm bg-background" />
+                  <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeAdvantage(adv.id)}>
                     <X className="w-4 h-4 text-muted-foreground" />
                   </Button>
                 </div>
@@ -468,50 +389,33 @@ export const OurStrategy = () => {
               <div key={member.id} className="flex items-center gap-2 bg-muted/30 rounded-lg p-2 group">
                 <UserCircle className="w-8 h-8 text-accent flex-shrink-0" />
                 <div className="flex-1 min-w-0 space-y-1">
-                  <Input
-                    value={member.name}
-                    onChange={(e) => updateTeamMember(member.id, "name", e.target.value)}
-                    placeholder="Name"
-                    className="h-6 text-sm font-medium bg-background px-2"
-                  />
+                  <Input value={member.name} onChange={(e) => updateTeamMember(member.id, "name", e.target.value)} placeholder="Name" className="h-6 text-sm font-medium bg-background px-2" />
                   <Select value={member.role} onValueChange={(v) => updateTeamMember(member.id, "role", v)}>
                     <SelectTrigger className="h-6 text-xs bg-background px-2">
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
                     <SelectContent className="bg-popover border shadow-lg z-50">
                       {teamRoles.map((role) => (
-                        <SelectItem key={role.value} value={role.value}>
-                          {role.label}
-                        </SelectItem>
+                        <SelectItem key={role.value} value={role.value}>{role.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => removeTeamMember(member.id)}
-                >
+                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeTeamMember(member.id)}>
                   <X className="w-3 h-3 text-muted-foreground" />
                 </Button>
               </div>
             ))}
-            <Button 
-              variant="ghost" 
-              className="h-auto min-h-[60px] border border-dashed border-border text-xs text-muted-foreground flex items-center justify-center gap-1"
-              onClick={addTeamMember}
-            >
+            <Button variant="ghost" className="h-auto min-h-[60px] border border-dashed border-border text-xs text-muted-foreground flex items-center justify-center gap-1" onClick={addTeamMember}>
               <Plus className="w-3 h-3" /> Add member
             </Button>
           </div>
         </FieldGroup>
 
+        {/* Strategic Play */}
         <div className="bg-muted/30 rounded-lg p-4 space-y-4">
           <h4 className="text-sm font-medium">This Quarter's Strategic Play</h4>
-          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Play Type Selector */}
             <div>
               <label className="text-xs text-muted-foreground mb-2 block">Play Type</label>
               <Select value={selectedPlay} onValueChange={setSelectedPlay}>
@@ -533,8 +437,6 @@ export const OurStrategy = () => {
                 <p className="text-xs text-muted-foreground mt-1.5">{currentPlay.description}</p>
               )}
             </div>
-
-            {/* Current Play Display */}
             <div className="flex items-center justify-center">
               {currentPlay && (
                 <div className="flex items-center gap-2 bg-accent/10 text-accent px-4 py-2 rounded-full">
@@ -545,21 +447,13 @@ export const OurStrategy = () => {
             </div>
           </div>
 
-          {/* Milestone Sequence */}
           <div>
             <label className="text-xs text-muted-foreground mb-2 block">
               Milestone Sequence (use → to separate steps)
             </label>
-            <Textarea
-              value={milestones}
-              onChange={(e) => setMilestones(e.target.value)}
-              placeholder="Step 1 → Step 2 → Step 3"
-              className="bg-background resize-none text-sm"
-              rows={2}
-            />
+            <Textarea value={milestones} onChange={(e) => setMilestones(e.target.value)} placeholder="Step 1 → Step 2 → Step 3" className="bg-background resize-none text-sm" rows={2} />
           </div>
 
-          {/* Visual Milestone Display */}
           <div className="pt-2 border-t border-border/50">
             <div className="flex flex-wrap items-center gap-2 text-sm">
               {milestones.split("→").map((step, index, arr) => (
