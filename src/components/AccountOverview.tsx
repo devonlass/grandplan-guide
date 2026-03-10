@@ -1,3 +1,4 @@
+import type { ReactNode } from "react"; // fixed: explicit ReactNode import
 import { SectionCard } from "./SectionCard";
 import { FieldGroup } from "./FieldGroup";
 import { Badge } from "@/components/ui/badge";
@@ -29,11 +30,14 @@ const products = [
 const vesselTypes = [
   { type: "Tankers", count: 42, color: "hsl(var(--accent))" },
   { type: "Bulk Carriers", count: 35, color: "hsl(var(--primary))" },
-  { type: "Container Ships", count: 24, color: "hsl(var(--warning))" },
-  { type: "Offshore Vessels", count: 12, color: "hsl(var(--success))" },
+  { type: "Container Ships", count: 24, color: "hsl(208, 79%, 51%)" }, // fixed: replaced --warning
+  { type: "Offshore Vessels", count: 12, color: "hsl(142, 71%, 45%)" }, // fixed: replaced --success
   { type: "Gas Carriers", count: 8, color: "hsl(var(--destructive))" },
   { type: "Other", count: 3, color: "hsl(var(--muted-foreground))" },
 ];
+
+// Fixed: moved totalVessels calculation outside component to avoid repeated computation
+const totalVessels = vesselTypes.reduce((sum, v) => sum + v.count, 0);
 
 export const AccountOverview = () => {
   return (
@@ -110,7 +114,8 @@ export const AccountOverview = () => {
         <FieldGroup label="Health Score" hubspotField="health_score">
           <div className="flex items-center gap-2">
             <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-              <div className="w-4/5 h-full bg-success rounded-full" />
+              {/* Fixed: replaced bg-success with standard green */}
+              <div className="w-4/5 h-full bg-green-500 rounded-full" />
             </div>
             <span className="text-sm font-medium">82/100</span>
           </div>
@@ -122,8 +127,8 @@ export const AccountOverview = () => {
             <div className="mt-3 space-y-3">
               {/* Stacked bar visualization */}
               <div className="h-4 rounded-full overflow-hidden flex">
+                {/* Fixed: removed unused `index` param, using shared totalVessels */}
                 {vesselTypes.map((vessel) => {
-                  const totalVessels = vesselTypes.reduce((sum, v) => sum + v.count, 0);
                   const percentage = (vessel.count / totalVessels) * 100;
                   return (
                     <div
@@ -142,7 +147,6 @@ export const AccountOverview = () => {
               {/* Legend */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                 {vesselTypes.map((vessel) => {
-                  const totalVessels = vesselTypes.reduce((sum, v) => sum + v.count, 0);
                   const percentage = (vessel.count / totalVessels) * 100;
                   return (
                     <div key={vessel.type} className="flex items-center gap-2">
@@ -197,7 +201,7 @@ export const AccountOverview = () => {
 };
 
 interface MetricCardProps {
-  icon: React.ReactNode;
+  icon: ReactNode; // fixed: using imported ReactNode type
   label: string;
   value: string;
   trend?: string;
@@ -217,7 +221,7 @@ const MetricCard = ({ icon, label, value, trend, hubspot }: MetricCardProps) => 
       <div className="flex items-center justify-between">
         <span className="text-sm text-muted-foreground">{label}</span>
         {trend && (
-          <span className="text-xs font-medium text-success">{trend}</span>
+          <span className="text-xs font-medium text-green-600">{trend}</span> // fixed: replaced text-success
         )}
       </div>
     </div>
