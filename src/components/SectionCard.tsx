@@ -23,9 +23,10 @@ export const SectionCard = ({
 }: SectionCardProps) => {
   return (
     <Collapsible defaultOpen={defaultOpen} className="section-card">
-      <CollapsibleTrigger className="section-header w-full hover:bg-muted/30 transition-colors">
+      {/* Fixed: added `group` class so group-data-[state=closed] works on the chevron */}
+      <CollapsibleTrigger className="section-header group w-full hover:bg-muted/30 transition-colors">
         <div className="flex items-center gap-3">
-          <ChevronDown className="w-5 h-5 text-muted-foreground transition-transform duration-200 group-data-[state=closed]:rotate-[-90deg]" />
+          <ChevronDown className="w-5 h-5 text-muted-foreground transition-transform duration-200 group-data-[state=closed]:-rotate-90" />
           <h2 className="section-title">{title}</h2>
           {badge}
         </div>
