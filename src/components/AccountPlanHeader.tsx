@@ -2,7 +2,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Download, Calendar, RefreshCw } from "lucide-react";
 
+// Fixed: moved QuickStat above AccountPlanHeader so it's defined before use
+const QuickStat = ({ label, value }: { label: string; value: string }) => (
+  <div>
+    <div className="text-xs text-primary-foreground/60 uppercase tracking-wide mb-1">
+      {label}
+    </div>
+    <div className="text-xl font-semibold">{value}</div>
+  </div>
+);
+
 export const AccountPlanHeader = () => {
+  // Fixed: added placeholder handler for Export PDF button
+  const handleExportPDF = () => {
+    console.log("Export PDF clicked — wire up a PDF library here e.g. jsPDF");
+  };
+
   return (
     <header className="bg-primary text-primary-foreground">
       <div className="max-w-7xl mx-auto px-6 py-8">
@@ -19,7 +34,7 @@ export const AccountPlanHeader = () => {
               Strategic Account Plan • Q1 2025
             </p>
           </div>
-          
+
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2 text-sm text-primary-foreground/70">
               <Calendar className="w-4 h-4" />
@@ -29,7 +44,8 @@ export const AccountPlanHeader = () => {
               <RefreshCw className="w-4 h-4" />
               <span>Last Updated: Jan 15, 2025</span>
             </div>
-            <Button variant="secondary" size="sm" className="gap-2">
+            {/* Fixed: added onClick handler */}
+            <Button variant="secondary" size="sm" className="gap-2" onClick={handleExportPDF}>
               <Download className="w-4 h-4" />
               Export PDF
             </Button>
@@ -47,12 +63,3 @@ export const AccountPlanHeader = () => {
     </header>
   );
 };
-
-const QuickStat = ({ label, value }: { label: string; value: string }) => (
-  <div>
-    <div className="text-xs text-primary-foreground/60 uppercase tracking-wide mb-1">
-      {label}
-    </div>
-    <div className="text-xl font-semibold">{value}</div>
-  </div>
-);
