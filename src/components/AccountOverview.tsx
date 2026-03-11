@@ -6,17 +6,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Building2, Calendar, DollarSign, TrendingUp, Users, Anchor, Ship, Package } from "lucide-react";
 import { useAccountOverview, useUpdateAccountOverview } from "@/hooks/useAccountOverview";
 
-const industries = [
-  { value: "ship-owner",  label: "Ship Owner" },
-  { value: "ship-manager",label: "Ship Manager" },
-  { value: "shipyard",    label: "Shipyard" },
-  { value: "oil-gas",     label: "Oil & Gas" },
-  { value: "partner",     label: "Partner" },
-  { value: "government",  label: "Government" },
-  { value: "defense",     label: "Defense" },
-  { value: "land-based",  label: "Land Based" },
-];
-
 const formatRevenue = (v: number | null) => {
   if (!v) return "—";
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
@@ -28,6 +17,17 @@ const formatDate = (d: string | null) => {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("en-US", { month: "short", year: "numeric" });
 };
+
+const industries = [
+  { value: "ship-owner",  label: "Ship Owner" },
+  { value: "ship-manager",label: "Ship Manager" },
+  { value: "shipyard",    label: "Shipyard" },
+  { value: "oil-gas",     label: "Oil & Gas" },
+  { value: "partner",     label: "Partner" },
+  { value: "government",  label: "Government" },
+  { value: "defense",     label: "Defense" },
+  { value: "land-based",  label: "Land Based" },
+];
 
 interface Props {
   planId: string;
@@ -49,11 +49,38 @@ export const AccountOverview = ({ planId }: Props) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Key Metrics Row */}
         <div className="lg:col-span-4 grid grid-cols-2 md:grid-cols-5 gap-4 pb-6 border-b border-border">
-          <MetricCard icon={<DollarSign className="w-5 h-5" />} label="Annual Revenue"  value={formatRevenue(data.annual_revenue)} trend={data.revenue_trend ?? undefined}   hubspot="deal_amount" />
-          <MetricCard icon={<TrendingUp  className="w-5 h-5" />} label="Growth Potential" value={data.growth_potential ?? "—"}                                                 hubspot="growth_potential" />
-          <MetricCard icon={<Ship        className="w-5 h-5" />} label="Vessels"         value={data.vessel_count?.toString() ?? "—"}  trend={data.vessel_trend ?? undefined}  hubspot="num_vessels" />
-          <MetricCard icon={<Users       className="w-5 h-5" />} label="Active Users"    value={data.active_users?.toString() ?? "—"}  trend={data.users_trend ?? undefined} />
-          <MetricCard icon={<Calendar    className="w-5 h-5" />} label="Renewal Date"    value={formatDate(data.renewal_date)}                                                  hubspot="renewal_date" />
+          <MetricCard
+            icon={<DollarSign className="w-5 h-5" />}
+            label="Annual Revenue"
+            value={formatRevenue(data.annual_revenue)}
+            trend={data.revenue_trend ?? undefined}
+            hubspot="deal_amount"
+          />
+          <MetricCard
+            icon={<TrendingUp className="w-5 h-5" />}
+            label="Growth Potential"
+            value={data.growth_potential ?? "—"}
+            hubspot="growth_potential"
+          />
+          <MetricCard
+            icon={<Ship className="w-5 h-5" />}
+            label="Vessels"
+            value={data.vessel_count?.toString() ?? "—"}
+            trend={data.vessel_trend ?? undefined}
+            hubspot="num_vessels"
+          />
+          <MetricCard
+            icon={<Users className="w-5 h-5" />}
+            label="Active Users"
+            value={data.active_users?.toString() ?? "—"}
+            trend={data.users_trend ?? undefined}
+          />
+          <MetricCard
+            icon={<Calendar className="w-5 h-5" />}
+            label="Renewal Date"
+            value={formatDate(data.renewal_date)}
+            hubspot="renewal_date"
+          />
         </div>
 
         {/* Account Details */}
@@ -103,23 +130,32 @@ export const AccountOverview = ({ planId }: Props) => {
         {/* Vessel Type Breakdown */}
         {vesselTypes.length > 0 && (
           <div className="lg:col-span-4 pt-4 border-t border-border">
-            <FieldGroup label="Fleet Composition by Vessel Type" hubspotField="vessel_types">
-              <div className="mt-3 space-y-3">
-                <div className="h-4 rounded-full overflow-hidden flex">
-                  {vesselTypes.map((vessel) => {
-                    const pct = totalVessels > 0 ? (vessel.count / totalVessels) * 100 : 0;
-                    return (
-                      <div
-                        key={vessel.type}
-                        className="h-full transition-all hover:opacity-80"
-                        style={{ width: `${pct}%`, backgroundColor: vessel.color }}
-                        title={`${vessel.type}: ${vessel.count} vessels (${pct.toFixed(1)}%)`}
-                      />
-                    );
-                  })}
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                  {vesselTypes.map((vessel) => (
+          <FieldGroup label="Fleet Composition by Vessel Type" hubspotField="vessel_types">
+            <div className="mt-3 space-y-3">
+              {/* Stacked bar visualization */}
+              <div className="h-4 rounded-full overflow-hidden flex">
+                {/* Fixed: removed unused `index` param, using shared totalVessels */}
+                {vesselTypes.map((vessel) => {
+                  const percentage = (vessel.count / totalVessels) * 100;
+                  return (
+                    <div
+                      key={vessel.type}
+                      className="h-full transition-all hover:opacity-80"
+                      style={{ 
+                        width: `${percentage}%`, 
+                        backgroundColor: vessel.color,
+                      }}
+                      title={`${vessel.type}: ${vessel.count} vessels (${percentage.toFixed(1)}%)`}
+                    />
+                  );
+                })}
+              </div>
+              
+              {/* Legend */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                {vesselTypes.map((vessel) => {
+                  const percentage = (vessel.count / totalVessels) * 100;
+                  return (
                     <div key={vessel.type} className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: vessel.color }} />
                       <div className="text-xs">
@@ -127,34 +163,34 @@ export const AccountOverview = ({ planId }: Props) => {
                         <span className="text-muted-foreground ml-1">{vessel.type}</span>
                       </div>
                     </div>
-                  ))}
+                  );
+                })}
                 </div>
               </div>
             </FieldGroup>
           </div>
         )}
 
-        {/* Products/Modules */}
         {products.length > 0 && (
           <div className="lg:col-span-4 pt-4 border-t border-border">
-            <FieldGroup label="Current Products / Modules" hubspotField="products">
-              <div className="flex flex-wrap gap-2 mt-2">
-                {products.map((product) => (
-                  <Badge
-                    key={product.id}
-                    variant={product.active ? "default" : "outline"}
-                    className={product.active
-                      ? "bg-accent/10 text-accent border border-accent/20"
-                      : "bg-muted/50 text-muted-foreground border-dashed"
-                    }
-                  >
-                    <Package className="w-3 h-3 mr-1" />
-                    {product.label}
-                    {!product.active && <span className="ml-1 text-[10px]">(opportunity)</span>}
-                  </Badge>
-                ))}
-              </div>
-            </FieldGroup>
+          <FieldGroup label="Current Products / Modules" hubspotField="products">
+            <div className="flex flex-wrap gap-2 mt-2">
+              {products.map((product) => (
+                <Badge 
+                  key={product.id}
+                  variant={product.active ? "default" : "outline"}
+                  className={product.active 
+                    ? "bg-accent/10 text-accent border border-accent/20" 
+                    : "bg-muted/50 text-muted-foreground border-dashed"
+                  }
+                >
+                  <Package className="w-3 h-3 mr-1" />
+                  {product.label}
+                  {!product.active && <span className="ml-1 text-[10px]">(opportunity)</span>}
+                </Badge>
+              ))}
+            </div>
+          </FieldGroup>
           </div>
         )}
 
@@ -178,16 +214,22 @@ interface MetricCardProps {
   hubspot?: string;
 }
 
-const MetricCard = ({ icon, label, value, trend, hubspot }: MetricCardProps) => (
-  <div className="bg-muted/30 rounded-lg p-4">
-    <div className="flex items-center justify-between mb-2">
-      <span className="text-muted-foreground">{icon}</span>
-      {hubspot && <span className="text-[10px] text-hubspot font-medium">⟳ HubSpot</span>}
+const MetricCard = ({ icon, label, value, trend, hubspot }: MetricCardProps) => {
+  return (
+    <div className="bg-muted/30 rounded-lg p-4">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-muted-foreground">{icon}</span>
+        {hubspot && (
+          <span className="text-[10px] text-hubspot font-medium">⟳ HubSpot</span>
+        )}
+      </div>
+      <div className="text-2xl font-semibold mb-1">{value}</div>
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-muted-foreground">{label}</span>
+        {trend && (
+          <span className="text-xs font-medium text-green-600">{trend}</span> // fixed: replaced text-success
+        )}
+      </div>
     </div>
-    <div className="text-2xl font-semibold mb-1">{value}</div>
-    <div className="flex items-center justify-between">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      {trend && <span className="text-xs font-medium text-green-600">{trend}</span>}
-    </div>
-  </div>
-);
+  );
+};
