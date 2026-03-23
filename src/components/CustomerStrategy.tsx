@@ -1,74 +1,171 @@
-import type { ReactNode } from "react";
+import { useState, useEffect } from "react";
 import { SectionCard } from "./SectionCard";
 import { FieldGroup } from "./FieldGroup";
-import { Target, TrendingUp, AlertTriangle, Lightbulb } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Target, TrendingUp, AlertTriangle, Lightbulb, Plus, X } from "lucide-react";
+import { useCustomerStrategy, useUpdateCustomerStrategy } from "@/hooks/useCustomerStrategy";
 
-const PriorityItem = ({ icon, text }: { icon: ReactNode; text: string }) => (
-  <li className="flex items-start gap-2 text-sm">
-    <span className="mt-0.5 flex-shrink-0">{icon}</span>
-    <span>{text}</span>
-  </li>
-);
+interface Props {
+  planId: string;
+}
 
-export const CustomerStrategy = () => {
+export const CustomerStrategy = ({ planId }: Props) => {
+  const { data, isLoading } = useCustomerStrategy(planId);
+  const { mutate: updateStrategy } = useUpdateCustomerStrategy();
+
+  const [priorities,      setPriorities]      = useState<string[]>([]);
+  const [challenges,      setChallenges]      = useState<string[]>([]);
+  const [context,         setContext]         = useState("");
+  const [budgetCycle,     setBudgetCycle]     = useState("");
+  const [decisionProcess, setDecisionProcess] = useState("");
+  const [procurement,     setProcurement]     = useState("");
+
+  useEffect(() => {
+    if (!data) return;
+    setPriorities(Array.isArray(data.business_priorities) ? data.business_priorities : []);
+    setChallenges(Array.isArray(data.key_challenges) ? data.key_challenges : []);
+    setContext(data.industry_context ?? "");
+    setBudgetCycle(data.budget_cycle ?? "");
+    setDecisionProcess(data.decision_process ?? "");
+    setProcurement(data.procurement_approach ?? "");
+  }, [data]);
+
+  const save = (updates: object) => updateStrategy({ planId, ...updates } as Parameters<typeof updateStrategy>[0]);
+
+  const updatePriority = (i: number, val: string) => {
+    const next = priorities.map((p, idx) => idx === i ? val : p);
+    setPriorities(next);
+  };
+  const savePriorities = () => save({ business_priorities: priorities });
+  const addPriority = () => {
+    const next = [...priorities, ""];
+    setPriorities(next);
+    save({ business_priorities: next });
+  };
+  const removePriority = (i: number) => {
+    const next = priorities.filter((_, idx) => idx !== i);
+    setPriorities(next);
+    save({ business_priorities: next });
+  };
+
+  const updateChallenge = (i: number, val: string) => {
+    const next = challenges.map((c, idx) => idx === i ? val : c);
+    setChallenges(next);
+  };
+  const saveChallenges = () => save({ key_challenges: challenges });
+  const addChallenge = () => {
+    const next = [...challenges, ""];
+    setChallenges(next);
+    save({ key_challenges: next });
+  };
+  const removeChallenge = (i: number) => {
+    const next = challenges.filter((_, idx) => idx !== i);
+    setChallenges(next);
+    save({ key_challenges: next });
+  };
+
+  if (isLoading) return <SectionCard title="Customer Strategy"><div className="animate-pulse h-40 bg-muted rounded" /></SectionCard>;
+
   return (
     <SectionCard title="Customer Strategy" badge={
       <span className="text-xs text-muted-foreground font-normal">Their business goals & challenges</span>
     }>
       <div className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Business Priorities */}
           <FieldGroup label="Business Priorities (Next 12 Months)">
             <ul className="space-y-2">
-              <PriorityItem 
-                icon={<Target className="w-4 h-4 text-accent" />}
-                text="Expand into European markets by Q3 2025"
-              />
-              <PriorityItem 
-                icon={<TrendingUp className="w-4 h-4 text-accent" />}
-                text="Reduce operational costs by 15%"
-              />
-              <PriorityItem 
-                icon={<Lightbulb className="w-4 h-4 text-accent" />}
-                text="Launch AI-powered customer service platform"
-              />
+              {priorities.map((p, i) => (
+                <li key={i} className="flex items-start gap-2 group">
+                  <span className="mt-2 flex-shrink-0">
+                    {i === 0 ? <Target className="w-4 h-4 text-accent" />
+                      : i === 1 ? <TrendingUp className="w-4 h-4 text-accent" />
+                      : <Lightbulb className="w-4 h-4 text-accent" />}
+                  </span>
+                  <Input
+                    value={p}
+                    onChange={(e) => updatePriority(i, e.target.value)}
+                    onBlur={savePriorities}
+                    className="h-8 text-sm bg-background flex-1"
+                  />
+                  <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" onClick={() => removePriority(i)}>
+                    <X className="w-3 h-3 text-muted-foreground" />
+                  </Button>
+                </li>
+              ))}
             </ul>
+            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground mt-1" onClick={addPriority}>
+              <Plus className="w-3 h-3 mr-1" /> Add priority
+            </Button>
           </FieldGroup>
+
+          {/* Key Challenges */}
           <FieldGroup label="Key Challenges & Pain Points">
             <ul className="space-y-2">
-              <PriorityItem 
-                icon={<AlertTriangle className="w-4 h-4 text-yellow-500" />}
-                text="Legacy system integration slowing digital transformation"
-              />
-              <PriorityItem 
-                icon={<AlertTriangle className="w-4 h-4 text-yellow-500" />}
-                text="Talent shortage in cloud engineering"
-              />
-              <PriorityItem 
-                icon={<AlertTriangle className="w-4 h-4 text-yellow-500" />}
-                text="Compliance complexity in new markets"
-              />
+              {challenges.map((c, i) => (
+                <li key={i} className="flex items-start gap-2 group">
+                  <AlertTriangle className="w-4 h-4 text-yellow-500 mt-2 flex-shrink-0" />
+                  <Input
+                    value={c}
+                    onChange={(e) => updateChallenge(i, e.target.value)}
+                    onBlur={saveChallenges}
+                    className="h-8 text-sm bg-background flex-1"
+                  />
+                  <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" onClick={() => removeChallenge(i)}>
+                    <X className="w-3 h-3 text-muted-foreground" />
+                  </Button>
+                </li>
+              ))}
             </ul>
+            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground mt-1" onClick={addChallenge}>
+              <Plus className="w-3 h-3 mr-1" /> Add challenge
+            </Button>
           </FieldGroup>
         </div>
 
+        {/* Industry Context */}
         <div className="bg-muted/30 rounded-lg p-4">
           <h4 className="text-sm font-medium mb-3">Industry & Competitive Context</h4>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Enterprise software sector experiencing consolidation. Key competitor TechCorp acquired smaller player last quarter, 
-            increasing pressure on Acme to accelerate innovation. Regulatory changes (GDPR 2.0) creating compliance burden 
-            but also opportunity for differentiation.
-          </p>
+          <Textarea
+            value={context}
+            onChange={(e) => setContext(e.target.value)}
+            onBlur={() => save({ industry_context: context })}
+            placeholder="Describe the industry and competitive context…"
+            className="bg-background resize-none text-sm leading-relaxed min-h-[80px]"
+            rows={3}
+          />
         </div>
 
+        {/* Procurement Details */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FieldGroup label="Budget Cycle">
-            <span className="text-sm">October - December (FY planning)</span>
+            <Input
+              value={budgetCycle}
+              onChange={(e) => setBudgetCycle(e.target.value)}
+              onBlur={() => save({ budget_cycle: budgetCycle })}
+              placeholder="e.g. October - December"
+              className="text-sm h-8 bg-background"
+            />
           </FieldGroup>
           <FieldGroup label="Decision Process">
-            <span className="text-sm">Committee-based, 6-8 week cycle</span>
+            <Input
+              value={decisionProcess}
+              onChange={(e) => setDecisionProcess(e.target.value)}
+              onBlur={() => save({ decision_process: decisionProcess })}
+              placeholder="e.g. Committee-based, 6-8 week cycle"
+              className="text-sm h-8 bg-background"
+            />
           </FieldGroup>
           <FieldGroup label="Procurement Approach">
-            <span className="text-sm">Centralized, vendor consolidation focus</span>
+            <Input
+              value={procurement}
+              onChange={(e) => setProcurement(e.target.value)}
+              onBlur={() => save({ procurement_approach: procurement })}
+              placeholder="e.g. Centralized"
+              className="text-sm h-8 bg-background"
+            />
           </FieldGroup>
         </div>
       </div>

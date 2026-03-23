@@ -14,7 +14,9 @@ import { useParams } from "react-router-dom";
 import { Info, PanelLeft } from "lucide-react";
 
 const PlanDetail = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
+
+  if (!id) return null;
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -36,27 +38,27 @@ const PlanDetail = () => {
             </div>
             <div className="space-y-6">
               <section id="account-overview" className="scroll-mt-6">
-                <AccountOverview />
+                <AccountOverview planId={id} />
               </section>
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 <section id="customer-strategy" className="scroll-mt-6">
-                  <CustomerStrategy />
+                  <CustomerStrategy planId={id} />
                 </section>
                 <section id="our-strategy" className="scroll-mt-6">
-                  <OurStrategy />
+                  <OurStrategy planId={id} />
                 </section>
               </div>
               <section id="stakeholder-map" className="scroll-mt-6">
-                <StakeholderMap />
+                <StakeholderMap planId={id} />
               </section>
               <section id="execution-plan" className="scroll-mt-6">
-                <ExecutionPlan />
+                <ExecutionPlan planId={id} />
               </section>
               <section id="risks-dependencies" className="scroll-mt-6">
-                <RisksAndDependencies />
+                <RisksAndDependencies planId={id} />
               </section>
               <section id="quarterly-review" className="scroll-mt-6">
-                <QuarterlyReview />
+                <QuarterlyReview planId={id} />
               </section>
               <section id="attachments" className="scroll-mt-6">
                 <Attachments />

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { SectionCard } from "./SectionCard";
 import { FieldGroup } from "./FieldGroup";
 import { Badge } from "@/components/ui/badge";
@@ -7,183 +7,159 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle2, ArrowRight, Zap, Target, Shield, TrendingUp, Users, RefreshCw, Plus, X, UserCircle } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, Cell, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Cell } from "recharts";
 import { Button } from "@/components/ui/button";
-
-// Fixed: moved all static constants outside component to avoid recreation on every render
+import {
+  useStrategyConfig, useUpsertStrategyConfig,
+  useOpportunities, useAddOpportunity, useUpdateOpportunity, useDeleteOpportunity,
+  useThreats, useAddThreat, useUpdateThreat, useDeleteThreat,
+  useAdvantages, useAddAdvantage, useUpdateAdvantage, useDeleteAdvantage,
+  useTeamMembers, useAddTeamMember, useUpdateTeamMember, useDeleteTeamMember,
+} from "@/hooks/useOurStrategy";
 
 const playTypes = [
-  { value: "land-expand", label: "Land & Expand", icon: TrendingUp, description: "Win initial deal, then grow footprint" },
-  { value: "defend-grow", label: "Defend & Grow", icon: Shield, description: "Protect base while expanding value" },
-  { value: "cross-sell", label: "Cross-sell", icon: Target, description: "Introduce new products/modules" },
-  { value: "retention", label: "Retention", icon: RefreshCw, description: "Secure renewal, minimize churn risk" },
-  { value: "expand-users", label: "Expand Users", icon: Users, description: "Grow user base within account" },
+  { value: "land-expand",  label: "Land & Expand",   icon: TrendingUp, description: "Win initial deal, then grow footprint" },
+  { value: "defend-grow",  label: "Defend & Grow",    icon: Shield,     description: "Protect base while expanding value" },
+  { value: "cross-sell",   label: "Cross-sell",        icon: Target,     description: "Introduce new products/modules" },
+  { value: "retention",    label: "Retention",         icon: RefreshCw,  description: "Secure renewal, minimize churn risk" },
+  { value: "expand-users", label: "Expand Users",      icon: Users,      description: "Grow user base within account" },
 ];
 
 const teamRoles = [
-  { value: "account-manager", label: "Account Manager" },
-  { value: "technical-account-manager", label: "Technical Account Manager" },
-  { value: "slt-sponsor", label: "SLT Sponsor" },
+  { value: "account-manager",          label: "Account Manager" },
+  { value: "technical-account-manager",label: "Technical Account Manager" },
+  { value: "slt-sponsor",              label: "SLT Sponsor" },
   { value: "customer-support-manager", label: "Customer Support Manager" },
-  { value: "ps-consultant", label: "PS Consultant" },
+  { value: "ps-consultant",            label: "PS Consultant" },
 ];
 
 const competitors = [
-  { value: "bassnet", label: "Bassnet" },
-  { value: "sertica", label: "Sertica" },
-  { value: "mariapps", label: "MariApps" },
-  { value: "sap", label: "SAP" },
-  { value: "helm", label: "Helm" },
-  { value: "jibe", label: "Jibe" },
-  { value: "shipmanager", label: "ShipManager" },
-  { value: "danaos", label: "Danaos" },
+  { value: "bassnet",    label: "Bassnet" },
+  { value: "sertica",    label: "Sertica" },
+  { value: "mariapps",   label: "MariApps" },
+  { value: "sap",        label: "SAP" },
+  { value: "helm",       label: "Helm" },
+  { value: "jibe",       label: "Jibe" },
+  { value: "shipmanager",label: "ShipManager" },
+  { value: "danaos",     label: "Danaos" },
   { value: "ibm-maximo", label: "IBM - Maximo" },
-  { value: "frs", label: "FRS" },
-  { value: "arribatec", label: "Arribatec Marine – InfoSHIP" },
-  { value: "oceanly", label: "Oceanly" },
-  { value: "mespas", label: "MESPAS" },
-  { value: "other", label: "Other" },
+  { value: "frs",        label: "FRS" },
+  { value: "arribatec",  label: "Arribatec Marine – InfoSHIP" },
+  { value: "oceanly",    label: "Oceanly" },
+  { value: "mespas",     label: "MESPAS" },
+  { value: "other",      label: "Other" },
 ];
 
-// Fixed: moved outside component
 const stageOrder = ["new", "qualified", "demo", "proposal-sent", "negotiation"];
-
 const stageLabels: Record<string, string> = {
-  "new": "New",
-  "qualified": "Qualified",
-  "demo": "Demo",
-  "proposal-sent": "Proposal Sent",
-  "negotiation": "Negotiation",
+  "new": "New", "qualified": "Qualified", "demo": "Demo",
+  "proposal-sent": "Proposal Sent", "negotiation": "Negotiation",
 };
-
-// Fixed: replaced hsl(var(--warning)) and hsl(var(--success)) with standard colours
 const stageColors: Record<string, string> = {
   "new": "hsl(var(--muted-foreground))",
   "qualified": "hsl(var(--primary))",
   "demo": "hsl(var(--primary))",
-  "proposal-sent": "#ca8a04",  // fixed: replaced hsl(var(--warning)) with yellow-600
-  "negotiation": "#16a34a",    // fixed: replaced hsl(var(--success)) with green-600
+  "proposal-sent": "#ca8a04",
+  "negotiation": "#16a34a",
 };
 
-// Fixed: moved utility functions outside component
-const parseValue = (valueStr: string): number => {
-  const cleaned = valueStr.replace(/[$,\s]/g, '').toUpperCase();
-  const multipliers: Record<string, number> = { K: 1000, M: 1000000 };
+const parseValue = (v: string | null): number => {
+  if (!v) return 0;
+  const cleaned = v.replace(/[$,\s]/g, "").toUpperCase();
   const match = cleaned.match(/^([\d.]+)([KM])?$/);
   if (!match) return 0;
+  const multipliers: Record<string, number> = { K: 1000, M: 1000000 };
   const num = parseFloat(match[1]);
   const suffix = match[2] as keyof typeof multipliers;
   return suffix ? num * multipliers[suffix] : num;
 };
 
-const parseProbability = (probStr: string): number => {
-  const num = parseFloat(probStr.replace('%', ''));
+const parseProbability = (p: string | null): number => {
+  if (!p) return 0;
+  const num = parseFloat(p.replace("%", ""));
   return isNaN(num) ? 0 : num / 100;
 };
 
-const formatCurrency = (value: number): string => {
-  if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
-  if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
-  return `$${value.toFixed(0)}`;
+const formatCurrency = (v: number): string => {
+  if (v >= 1000000) return `$${(v / 1000000).toFixed(1)}M`;
+  if (v >= 1000)    return `$${(v / 1000).toFixed(0)}K`;
+  return `$${v.toFixed(0)}`;
 };
 
-// Fixed: use a consistent number type for ids throughout
-let nextId = 10; // start above initial item ids to avoid collisions
-const getNextId = () => ++nextId;
+interface Props { planId: string; }
 
-export const OurStrategy = () => {
-  const [selectedPlay, setSelectedPlay] = useState("land-expand");
-  const [milestones, setMilestones] = useState(
-    "Secure EU Compliance win → Build case for AI add-on → Position for license expansion at renewal"
-  );
-  const [valueProposition, setValueProposition] = useState(
-    "Accelerate Acme's European expansion with our proven compliance automation suite, reducing time-to-market by 40% while cutting regulatory risk. Unlike competitors, our platform integrates natively with their existing SAP infrastructure."
-  );
-  const [threats, setThreats] = useState([
-    { id: 1, competitor: "sertica", note: "Aggressive pricing, but weak on compliance", level: "high" },
-    { id: 2, competitor: "mariapps", note: "Strong in EU, pursuing this account", level: "medium" },
-  ]);
-  const [advantages, setAdvantages] = useState([
-    { id: 1, text: "5-year relationship, trusted advisor status" },
-    { id: 2, text: "Deep SAP integration expertise" },
-    { id: 3, text: "Proven ROI: 3.2x documented return" },
-  ]);
-  const [opportunities, setOpportunities] = useState([
-    { id: 1, name: "EU Compliance Module", value: "$450K", timeline: "Q2 2025", probability: "75%", status: "demo" },
-    { id: 2, name: "AI Customer Service Add-on", value: "$280K", timeline: "Q3 2025", probability: "40%", status: "new" },
-    { id: 3, name: "Enterprise License Expansion", value: "$600K", timeline: "Q4 2025", probability: "60%", status: "proposal-sent" },
-  ]);
-  const [coreTeam, setCoreTeam] = useState([
-    { id: 1, name: "Sarah Chen", role: "account-manager" },
-    { id: 2, name: "Michael Torres", role: "technical-account-manager" },
-    { id: 3, name: "Emma Wilson", role: "customer-support-manager" },
-    { id: 4, name: "David Kim", role: "ps-consultant" },
-  ]);
+export const OurStrategy = ({ planId }: Props) => {
+  // ── config ──────────────────────────────────────────────────────────────────
+  const { data: config } = useStrategyConfig(planId);
+  const { mutate: upsertConfig } = useUpsertStrategyConfig();
 
-  const currentPlay = playTypes.find(p => p.value === selectedPlay);
+  const [selectedPlay,      setSelectedPlay]      = useState("land-expand");
+  const [milestones,        setMilestones]        = useState("");
+  const [valueProposition,  setValueProposition]  = useState("");
+
+  useEffect(() => {
+    if (!config) return;
+    setSelectedPlay(config.strategic_play ?? "land-expand");
+    setMilestones(config.milestones ?? "");
+    setValueProposition(config.unique_value_proposition ?? "");
+  }, [config]);
+
+  const saveConfig = (updates: object) => upsertConfig({ planId, ...updates } as Parameters<typeof upsertConfig>[0]);
+
+  // ── opportunities ────────────────────────────────────────────────────────────
+  const { data: opportunities = [] } = useOpportunities(planId);
+  const { mutate: addOpp }    = useAddOpportunity();
+  const { mutate: updateOpp } = useUpdateOpportunity();
+  const { mutate: deleteOpp } = useDeleteOpportunity();
+
+  // ── threats ──────────────────────────────────────────────────────────────────
+  const { data: threats = [] }   = useThreats(planId);
+  const { mutate: addThreat }    = useAddThreat();
+  const { mutate: updateThreat } = useUpdateThreat();
+  const { mutate: deleteThreat } = useDeleteThreat();
+
+  // ── advantages ───────────────────────────────────────────────────────────────
+  const { data: advantages = [] }   = useAdvantages(planId);
+  const { mutate: addAdvantage }    = useAddAdvantage();
+  const { mutate: updateAdvantage } = useUpdateAdvantage();
+  const { mutate: deleteAdvantage } = useDeleteAdvantage();
+
+  // ── team members ─────────────────────────────────────────────────────────────
+  const { data: coreTeam = [] }   = useTeamMembers(planId);
+  const { mutate: addMember }     = useAddTeamMember();
+  const { mutate: updateMember }  = useUpdateTeamMember();
+  const { mutate: deleteMember }  = useDeleteTeamMember();
+
+  // ── derived ─────────────────────────────────────────────────────────────────
+  const currentPlay = playTypes.find((p) => p.value === selectedPlay);
 
   const pipelineMetrics = opportunities.reduce(
     (acc, opp) => {
       const value = parseValue(opp.value);
-      const probability = parseProbability(opp.probability);
-      return {
-        totalValue: acc.totalValue + value,
-        weightedValue: acc.weightedValue + value * probability,
-      };
+      const prob  = parseProbability(opp.probability);
+      return { totalValue: acc.totalValue + value, weightedValue: acc.weightedValue + value * prob };
     },
     { totalValue: 0, weightedValue: 0 }
   );
 
-  // Fixed: dependencies now accurate since helpers are outside component
   const pipelineChartData = useMemo(() => {
     const stageMap: Record<string, { total: number; weighted: number; count: number }> = {};
-    stageOrder.forEach(stage => {
-      stageMap[stage] = { total: 0, weighted: 0, count: 0 };
-    });
-    opportunities.forEach(opp => {
-      const value = parseValue(opp.value);
-      const probability = parseProbability(opp.probability);
+    stageOrder.forEach((s) => { stageMap[s] = { total: 0, weighted: 0, count: 0 }; });
+    opportunities.forEach((opp) => {
+      const v = parseValue(opp.value);
+      const p = parseProbability(opp.probability);
       if (stageMap[opp.status]) {
-        stageMap[opp.status].total += value;
-        stageMap[opp.status].weighted += value * probability;
-        stageMap[opp.status].count += 1;
+        stageMap[opp.status].total    += v;
+        stageMap[opp.status].weighted += v * p;
+        stageMap[opp.status].count    += 1;
       }
     });
     return stageOrder
-      .filter(stage => stageMap[stage].count > 0)
-      .map(stage => ({
-        stage,
-        label: stageLabels[stage],
-        total: stageMap[stage].total,
-        weighted: stageMap[stage].weighted,
-        count: stageMap[stage].count,
-        fill: stageColors[stage],
-      }));
+      .filter((s) => stageMap[s].count > 0)
+      .map((s) => ({ stage: s, label: stageLabels[s], ...stageMap[s], fill: stageColors[s] }));
   }, [opportunities]);
 
-  const chartConfig = {
-    weighted: { label: "Weighted Value", color: "hsl(var(--primary))" },
-  };
-
-  const addTeamMember = () => setCoreTeam(prev => [...prev, { id: getNextId(), name: "", role: "" }]);
-  const removeTeamMember = (id: number) => setCoreTeam(prev => prev.filter(m => m.id !== id));
-  const updateTeamMember = (id: number, field: string, value: string) =>
-    setCoreTeam(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
-
-  const addThreat = () => setThreats(prev => [...prev, { id: getNextId(), competitor: "", note: "", level: "medium" }]);
-  const removeThreat = (id: number) => setThreats(prev => prev.filter(t => t.id !== id));
-  const updateThreat = (id: number, field: string, value: string) =>
-    setThreats(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
-
-  const addAdvantage = () => setAdvantages(prev => [...prev, { id: getNextId(), text: "" }]);
-  const removeAdvantage = (id: number) => setAdvantages(prev => prev.filter(a => a.id !== id));
-  const updateAdvantage = (id: number, text: string) =>
-    setAdvantages(prev => prev.map(a => a.id === id ? { ...a, text } : a));
-
-  const addOpportunity = () => setOpportunities(prev => [...prev, { id: getNextId(), name: "", value: "", timeline: "", probability: "", status: "new" }]);
-  const removeOpportunity = (id: number) => setOpportunities(prev => prev.filter(o => o.id !== id));
-  const updateOpportunity = (id: number, field: string, value: string) =>
-    setOpportunities(prev => prev.map(o => o.id === id ? { ...o, [field]: value } : o));
+  const chartConfig = { weighted: { label: "Weighted Value", color: "hsl(var(--primary))" } };
 
   return (
     <SectionCard title="Our Strategy" badge={
@@ -199,6 +175,7 @@ export const OurStrategy = () => {
           <Textarea
             value={valueProposition}
             onChange={(e) => setValueProposition(e.target.value)}
+            onBlur={() => saveConfig({ unique_value_proposition: valueProposition })}
             placeholder="Describe what makes your solution uniquely valuable to this account..."
             className="bg-background/50 resize-none text-sm leading-relaxed min-h-[80px]"
             rows={3}
@@ -231,10 +208,10 @@ export const OurStrategy = () => {
                   <ChartTooltip
                     content={
                       <ChartTooltipContent
-                        formatter={(value, name, item) => (
+                        formatter={(_value, _name, item) => (
                           <div className="flex flex-col gap-1">
                             <span className="font-medium">{formatCurrency(item.payload.weighted)} weighted</span>
-                            <span className="text-muted-foreground text-xs">{formatCurrency(item.payload.total)} total ({item.payload.count} opp{item.payload.count > 1 ? 's' : ''})</span>
+                            <span className="text-muted-foreground text-xs">{formatCurrency(item.payload.total)} total ({item.payload.count} opp{item.payload.count > 1 ? "s" : ""})</span>
                           </div>
                         )}
                       />
@@ -254,57 +231,30 @@ export const OurStrategy = () => {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Opportunity</th>
-                  <th>Value</th>
-                  <th>Timeline</th>
-                  <th>Probability</th>
-                  <th>Status</th>
-                  <th className="w-10"></th>
+                  <th>Opportunity</th><th>Value</th><th>Timeline</th><th>Probability</th><th>Status</th><th className="w-10"></th>
                 </tr>
               </thead>
               <tbody>
                 {opportunities.map((opp) => (
                   <tr key={opp.id} className="group">
+                    <td><Input value={opp.name ?? ""} onChange={(e) => updateOpp({ id: opp.id, planId, name: e.target.value })} placeholder="Opportunity name" className="h-8 text-sm font-medium bg-background border-0 focus-visible:ring-1" /></td>
+                    <td><Input value={opp.value ?? ""} onChange={(e) => updateOpp({ id: opp.id, planId, value: e.target.value })} placeholder="$0" className="h-8 text-sm bg-background border-0 focus-visible:ring-1 w-24" /></td>
+                    <td><Input value={opp.timeline ?? ""} onChange={(e) => updateOpp({ id: opp.id, planId, timeline: e.target.value })} placeholder="Q1 2025" className="h-8 text-sm bg-background border-0 focus-visible:ring-1 w-24" /></td>
+                    <td><Input value={opp.probability ?? ""} onChange={(e) => updateOpp({ id: opp.id, planId, probability: e.target.value })} placeholder="0%" className="h-8 text-sm bg-background border-0 focus-visible:ring-1 w-16" /></td>
                     <td>
-                      <Input value={opp.name} onChange={(e) => updateOpportunity(opp.id, "name", e.target.value)} placeholder="Opportunity name" className="h-8 text-sm font-medium bg-background border-0 focus-visible:ring-1" />
-                    </td>
-                    <td>
-                      <Input value={opp.value} onChange={(e) => updateOpportunity(opp.id, "value", e.target.value)} placeholder="$0" className="h-8 text-sm bg-background border-0 focus-visible:ring-1 w-24" />
-                    </td>
-                    <td>
-                      <Input value={opp.timeline} onChange={(e) => updateOpportunity(opp.id, "timeline", e.target.value)} placeholder="Q1 2025" className="h-8 text-sm bg-background border-0 focus-visible:ring-1 w-24" />
-                    </td>
-                    <td>
-                      <Input value={opp.probability} onChange={(e) => updateOpportunity(opp.id, "probability", e.target.value)} placeholder="0%" className="h-8 text-sm bg-background border-0 focus-visible:ring-1 w-16" />
-                    </td>
-                    <td>
-                      <Select value={opp.status} onValueChange={(v) => updateOpportunity(opp.id, "status", v)}>
-                        <SelectTrigger className="h-8 text-xs bg-background border-0 w-28">
-                          <SelectValue />
-                        </SelectTrigger>
+                      <Select value={opp.status} onValueChange={(v) => updateOpp({ id: opp.id, planId, status: v as typeof opp.status })}>
+                        <SelectTrigger className="h-8 text-xs bg-background border-0 w-28"><SelectValue /></SelectTrigger>
                         <SelectContent className="bg-popover border shadow-lg z-50">
-                          <SelectItem value="new">
-                            <Badge className="status-pill bg-muted text-muted-foreground">New</Badge>
-                          </SelectItem>
-                          <SelectItem value="qualified">
-                            <Badge className="status-pill status-active">Qualified</Badge>
-                          </SelectItem>
-                          <SelectItem value="demo">
-                            <Badge className="status-pill status-active">Demo</Badge>
-                          </SelectItem>
-                          {/* Fixed: replaced bg-warning/text-warning with standard colours */}
-                          <SelectItem value="proposal-sent">
-                            <Badge className="status-pill bg-yellow-100 text-yellow-700">Proposal Sent</Badge>
-                          </SelectItem>
-                          {/* Fixed: replaced bg-success/text-success with standard colours */}
-                          <SelectItem value="negotiation">
-                            <Badge className="status-pill bg-green-100 text-green-700">Negotiation</Badge>
-                          </SelectItem>
+                          <SelectItem value="new"><Badge className="status-pill bg-muted text-muted-foreground">New</Badge></SelectItem>
+                          <SelectItem value="qualified"><Badge className="status-pill status-active">Qualified</Badge></SelectItem>
+                          <SelectItem value="demo"><Badge className="status-pill status-active">Demo</Badge></SelectItem>
+                          <SelectItem value="proposal-sent"><Badge className="status-pill bg-yellow-100 text-yellow-700">Proposal Sent</Badge></SelectItem>
+                          <SelectItem value="negotiation"><Badge className="status-pill bg-green-100 text-green-700">Negotiation</Badge></SelectItem>
                         </SelectContent>
                       </Select>
                     </td>
                     <td>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeOpportunity(opp.id)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => deleteOpp({ id: opp.id, planId })}>
                         <X className="w-4 h-4 text-muted-foreground" />
                       </Button>
                     </td>
@@ -312,7 +262,7 @@ export const OurStrategy = () => {
                 ))}
               </tbody>
             </table>
-            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground mt-2" onClick={addOpportunity}>
+            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground mt-2" onClick={() => addOpp(planId)}>
               <Plus className="w-3 h-3 mr-1" /> Add opportunity
             </Button>
           </div>
@@ -324,40 +274,27 @@ export const OurStrategy = () => {
             <div className="space-y-2">
               {threats.map((threat) => (
                 <div key={threat.id} className="flex items-start gap-2 group">
-                  <Select value={threat.level} onValueChange={(v) => updateThreat(threat.id, "level", v)}>
-                    <SelectTrigger className="w-16 h-8 text-xs bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
+                  <Select value={threat.level} onValueChange={(v) => updateThreat({ id: threat.id, planId, level: v as typeof threat.level })}>
+                    <SelectTrigger className="w-16 h-8 text-xs bg-background"><SelectValue /></SelectTrigger>
                     <SelectContent className="bg-popover border shadow-lg z-50">
-                      <SelectItem value="high">
-                        <span className="text-destructive">●</span>
-                      </SelectItem>
-                      {/* Fixed: replaced text-warning with text-yellow-500 */}
-                      <SelectItem value="medium">
-                        <span className="text-yellow-500">●</span>
-                      </SelectItem>
-                      <SelectItem value="low">
-                        <span className="text-muted-foreground">●</span>
-                      </SelectItem>
+                      <SelectItem value="high"><span className="text-destructive">●</span></SelectItem>
+                      <SelectItem value="medium"><span className="text-yellow-500">●</span></SelectItem>
+                      <SelectItem value="low"><span className="text-muted-foreground">●</span></SelectItem>
                     </SelectContent>
                   </Select>
-                  <Select value={threat.competitor} onValueChange={(v) => updateThreat(threat.id, "competitor", v)}>
-                    <SelectTrigger className="w-32 h-8 text-sm font-medium bg-background">
-                      <SelectValue placeholder="Competitor" />
-                    </SelectTrigger>
+                  <Select value={threat.competitor ?? ""} onValueChange={(v) => updateThreat({ id: threat.id, planId, competitor: v })}>
+                    <SelectTrigger className="w-32 h-8 text-sm font-medium bg-background"><SelectValue placeholder="Competitor" /></SelectTrigger>
                     <SelectContent className="bg-popover border shadow-lg z-50">
-                      {competitors.map((comp) => (
-                        <SelectItem key={comp.value} value={comp.value}>{comp.label}</SelectItem>
-                      ))}
+                      {competitors.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                  <Input value={threat.note} onChange={(e) => updateThreat(threat.id, "note", e.target.value)} placeholder="Threat details..." className="flex-1 h-8 text-sm bg-background" />
-                  <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeThreat(threat.id)}>
+                  <Input value={threat.note ?? ""} onChange={(e) => updateThreat({ id: threat.id, planId, note: e.target.value })} placeholder="Threat details..." className="flex-1 h-8 text-sm bg-background" />
+                  <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => deleteThreat({ id: threat.id, planId })}>
                     <X className="w-4 h-4 text-muted-foreground" />
                   </Button>
                 </div>
               ))}
-              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={addThreat}>
+              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => addThreat(planId)}>
                 <Plus className="w-3 h-3 mr-1" /> Add threat
               </Button>
             </div>
@@ -367,15 +304,14 @@ export const OurStrategy = () => {
             <div className="space-y-2">
               {advantages.map((adv) => (
                 <div key={adv.id} className="flex items-center gap-2 group">
-                  {/* Fixed: replaced text-success with text-green-600 */}
                   <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
-                  <Input value={adv.text} onChange={(e) => updateAdvantage(adv.id, e.target.value)} placeholder="Describe advantage..." className="flex-1 h-8 text-sm bg-background" />
-                  <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeAdvantage(adv.id)}>
+                  <Input value={adv.text ?? ""} onChange={(e) => updateAdvantage({ id: adv.id, planId, text: e.target.value })} placeholder="Describe advantage..." className="flex-1 h-8 text-sm bg-background" />
+                  <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => deleteAdvantage({ id: adv.id, planId })}>
                     <X className="w-4 h-4 text-muted-foreground" />
                   </Button>
                 </div>
               ))}
-              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={addAdvantage}>
+              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => addAdvantage(planId)}>
                 <Plus className="w-3 h-3 mr-1" /> Add advantage
               </Button>
             </div>
@@ -389,24 +325,20 @@ export const OurStrategy = () => {
               <div key={member.id} className="flex items-center gap-2 bg-muted/30 rounded-lg p-2 group">
                 <UserCircle className="w-8 h-8 text-accent flex-shrink-0" />
                 <div className="flex-1 min-w-0 space-y-1">
-                  <Input value={member.name} onChange={(e) => updateTeamMember(member.id, "name", e.target.value)} placeholder="Name" className="h-6 text-sm font-medium bg-background px-2" />
-                  <Select value={member.role} onValueChange={(v) => updateTeamMember(member.id, "role", v)}>
-                    <SelectTrigger className="h-6 text-xs bg-background px-2">
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
+                  <Input value={member.name ?? ""} onChange={(e) => updateMember({ id: member.id, planId, name: e.target.value })} placeholder="Name" className="h-6 text-sm font-medium bg-background px-2" />
+                  <Select value={member.role ?? ""} onValueChange={(v) => updateMember({ id: member.id, planId, role: v as typeof member.role })}>
+                    <SelectTrigger className="h-6 text-xs bg-background px-2"><SelectValue placeholder="Select role" /></SelectTrigger>
                     <SelectContent className="bg-popover border shadow-lg z-50">
-                      {teamRoles.map((role) => (
-                        <SelectItem key={role.value} value={role.value}>{role.label}</SelectItem>
-                      ))}
+                      {teamRoles.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
-                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeTeamMember(member.id)}>
+                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => deleteMember({ id: member.id, planId })}>
                   <X className="w-3 h-3 text-muted-foreground" />
                 </Button>
               </div>
             ))}
-            <Button variant="ghost" className="h-auto min-h-[60px] border border-dashed border-border text-xs text-muted-foreground flex items-center justify-center gap-1" onClick={addTeamMember}>
+            <Button variant="ghost" className="h-auto min-h-[60px] border border-dashed border-border text-xs text-muted-foreground flex items-center justify-center gap-1" onClick={() => addMember(planId)}>
               <Plus className="w-3 h-3" /> Add member
             </Button>
           </div>
@@ -418,10 +350,8 @@ export const OurStrategy = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-xs text-muted-foreground mb-2 block">Play Type</label>
-              <Select value={selectedPlay} onValueChange={setSelectedPlay}>
-                <SelectTrigger className="w-full bg-background">
-                  <SelectValue />
-                </SelectTrigger>
+              <Select value={selectedPlay} onValueChange={(v) => { setSelectedPlay(v); saveConfig({ strategic_play: v }); }}>
+                <SelectTrigger className="w-full bg-background"><SelectValue /></SelectTrigger>
                 <SelectContent className="bg-popover border shadow-lg z-50">
                   {playTypes.map((play) => (
                     <SelectItem key={play.value} value={play.value}>
@@ -433,9 +363,7 @@ export const OurStrategy = () => {
                   ))}
                 </SelectContent>
               </Select>
-              {currentPlay && (
-                <p className="text-xs text-muted-foreground mt-1.5">{currentPlay.description}</p>
-              )}
+              {currentPlay && <p className="text-xs text-muted-foreground mt-1.5">{currentPlay.description}</p>}
             </div>
             <div className="flex items-center justify-center">
               {currentPlay && (
@@ -448,22 +376,23 @@ export const OurStrategy = () => {
           </div>
 
           <div>
-            <label className="text-xs text-muted-foreground mb-2 block">
-              Milestone Sequence (use → to separate steps)
-            </label>
-            <Textarea value={milestones} onChange={(e) => setMilestones(e.target.value)} placeholder="Step 1 → Step 2 → Step 3" className="bg-background resize-none text-sm" rows={2} />
+            <label className="text-xs text-muted-foreground mb-2 block">Milestone Sequence (use → to separate steps)</label>
+            <Textarea
+              value={milestones}
+              onChange={(e) => setMilestones(e.target.value)}
+              onBlur={() => saveConfig({ milestones })}
+              placeholder="Step 1 → Step 2 → Step 3"
+              className="bg-background resize-none text-sm"
+              rows={2}
+            />
           </div>
 
           <div className="pt-2 border-t border-border/50">
             <div className="flex flex-wrap items-center gap-2 text-sm">
               {milestones.split("→").map((step, index, arr) => (
                 <span key={index} className="flex items-center gap-2">
-                  <span className="bg-background px-3 py-1 rounded-md border border-border">
-                    {step.trim()}
-                  </span>
-                  {index < arr.length - 1 && (
-                    <ArrowRight className="w-4 h-4 text-accent flex-shrink-0" />
-                  )}
+                  <span className="bg-background px-3 py-1 rounded-md border border-border">{step.trim()}</span>
+                  {index < arr.length - 1 && <ArrowRight className="w-4 h-4 text-accent flex-shrink-0" />}
                 </span>
               ))}
             </div>

@@ -1,78 +1,40 @@
 import { SectionCard } from "./SectionCard";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { HubSpotBadge } from "./HubSpotBadge";
-import { Calendar, User, Flag } from "lucide-react";
+import { Calendar, User, Flag, Plus, X } from "lucide-react";
+import { useExecutionActions, useAddExecutionAction, useUpdateExecutionAction, useDeleteExecutionAction } from "@/hooks/useExecutionPlan";
+import type { ExecutionAction } from "@/types/database";
 
-interface Action {
-  id: string;
-  action: string;
-  owner: string;
-  dueDate: string;
-  priority: "high" | "medium" | "low";
-  completed: boolean;
-  hubspotTask?: boolean;
+interface Props {
+  planId: string;
 }
 
-const actions: Action[] = [
-  {
-    id: "1",
-    action: "Schedule executive business review with CTO Walsh",
-    owner: "Sarah Chen",
-    dueDate: "Jan 25, 2025",
-    priority: "high",
-    completed: false,
-    hubspotTask: true,
-  },
-  {
-    id: "2",
-    action: "Prepare EU compliance ROI analysis for CPO Chen",
-    owner: "Sarah Chen",
-    dueDate: "Jan 30, 2025",
-    priority: "high",
-    completed: false,
-    hubspotTask: true,
-  },
-  {
-    id: "3",
-    action: "Arrange SOC2 Type II documentation review with Security",
-    owner: "James Miller",
-    dueDate: "Feb 5, 2025",
-    priority: "medium",
-    completed: false,
-  },
-  {
-    id: "4",
-    action: "Demo AI customer service module to Product team",
-    owner: "Sarah Chen",
-    dueDate: "Feb 15, 2025",
-    priority: "medium",
-    completed: false,
-    hubspotTask: true,
-  },
-  {
-    id: "5",
-    action: "Quarterly check-in with Champion (Amanda Foster)",
-    owner: "Sarah Chen",
-    dueDate: "Feb 1, 2025",
-    priority: "low",
-    completed: true,
-  },
-];
+const getPriorityColor = (priority: ExecutionAction["priority"]) => {
+  switch (priority) {
+    case "high":   return "bg-destructive/10 text-destructive";
+    case "medium": return "bg-yellow-100 text-yellow-700";
+    default:       return "bg-muted text-muted-foreground";
+  }
+};
 
-export const ExecutionPlan = () => {
-  const getPriorityColor = (priority: Action["priority"]) => {
-    switch (priority) {
-      case "high": return "bg-destructive/10 text-destructive";
-      case "medium": return "bg-warning/10 text-warning";
-      default: return "bg-muted text-muted-foreground";
-    }
-  };
+export const ExecutionPlan = ({ planId }: Props) => {
+  const { data: actions = [], isLoading } = useExecutionActions(planId);
+  const { mutate: addAction }    = useAddExecutionAction();
+  const { mutate: updateAction } = useUpdateExecutionAction();
+  const { mutate: deleteAction } = useDeleteExecutionAction();
+
+  if (isLoading) return <SectionCard title="Quarterly Execution Plan"><div className="animate-pulse h-40 bg-muted rounded" /></SectionCard>;
+
+  const quarter = actions[0]?.quarter ?? "Q1 2025";
 
   return (
-    <SectionCard 
+    <SectionCard
       title="Quarterly Execution Plan"
-      badge={<span className="text-xs text-muted-foreground font-normal">Q1 2025 Actions</span>}
+      badge={<span className="text-xs text-muted-foreground font-normal">{quarter} Actions</span>}
     >
       <div className="space-y-4">
         {/* Summary Stats */}
@@ -83,11 +45,11 @@ export const ExecutionPlan = () => {
           </div>
           <div className="text-sm">
             <span className="text-muted-foreground">Completed:</span>{" "}
-            <span className="font-medium text-success">{actions.filter(a => a.completed).length}</span>
+            <span className="font-medium text-green-600">{actions.filter((a) => a.completed).length}</span>
           </div>
           <div className="text-sm">
             <span className="text-muted-foreground">High Priority:</span>{" "}
-            <span className="font-medium text-destructive">{actions.filter(a => a.priority === "high" && !a.completed).length}</span>
+            <span className="font-medium text-destructive">{actions.filter((a) => a.priority === "high" && !a.completed).length}</span>
           </div>
         </div>
 
@@ -102,46 +64,68 @@ export const ExecutionPlan = () => {
                 <th>Due Date</th>
                 <th>Priority</th>
                 <th className="w-20">Sync</th>
+                <th className="w-10"></th>
               </tr>
             </thead>
             <tbody>
               {actions.map((action) => (
-                <tr key={action.id} className={action.completed ? "opacity-60" : ""}>
+                <tr key={action.id} className={`group ${action.completed ? "opacity-60" : ""}`}>
                   <td>
-                    <Checkbox checked={action.completed} />
+                    <Checkbox
+                      checked={action.completed}
+                      onCheckedChange={(checked) => updateAction({ id: action.id, planId, completed: !!checked })}
+                    />
                   </td>
                   <td>
-                    <span className={action.completed ? "line-through text-muted-foreground" : "font-medium"}>
-                      {action.action}
-                    </span>
+                    <Input
+                      value={action.action ?? ""}
+                      onChange={(e) => updateAction({ id: action.id, planId, action: e.target.value })}
+                      placeholder="Describe action…"
+                      className={`h-8 text-sm bg-background border-0 focus-visible:ring-1 ${action.completed ? "line-through text-muted-foreground" : "font-medium"}`}
+                    />
                   </td>
                   <td>
                     <div className="flex items-center gap-2 text-sm">
-                      <User className="w-3 h-3 text-muted-foreground" />
-                      {action.owner}
+                      <User className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                      <Input value={action.owner ?? ""} onChange={(e) => updateAction({ id: action.id, planId, owner: e.target.value })} placeholder="Owner" className="h-7 text-sm bg-background border-0 focus-visible:ring-1 w-28" />
                     </div>
                   </td>
                   <td>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Calendar className="w-3 h-3" />
-                      {action.dueDate}
+                      <Calendar className="w-3 h-3 flex-shrink-0" />
+                      <Input value={action.due_date ?? ""} onChange={(e) => updateAction({ id: action.id, planId, due_date: e.target.value })} placeholder="YYYY-MM-DD" className="h-7 text-sm bg-background border-0 focus-visible:ring-1 w-28" />
                     </div>
                   </td>
                   <td>
-                    <Badge className={`${getPriorityColor(action.priority)} gap-1`}>
-                      <Flag className="w-3 h-3" />
-                      {action.priority}
-                    </Badge>
+                    <Select value={action.priority} onValueChange={(v) => updateAction({ id: action.id, planId, priority: v as ExecutionAction["priority"] })}>
+                      <SelectTrigger className="h-8 border-0 bg-transparent p-0 w-28">
+                        <Badge className={`${getPriorityColor(action.priority)} gap-1`}>
+                          <Flag className="w-3 h-3" />
+                          {action.priority}
+                        </Badge>
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover border shadow-lg z-50">
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="low">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </td>
                   <td>
-                    {action.hubspotTask && (
-                      <span className="text-[10px] text-hubspot font-medium">⟳ Task</span>
-                    )}
+                    {action.hubspot_task && <span className="text-[10px] text-hubspot font-medium">⟳ Task</span>}
+                  </td>
+                  <td>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => deleteAction({ id: action.id, planId })}>
+                      <X className="w-4 h-4 text-muted-foreground" />
+                    </Button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground mt-2" onClick={() => addAction(planId)}>
+            <Plus className="w-3 h-3 mr-1" /> Add action
+          </Button>
         </div>
       </div>
     </SectionCard>

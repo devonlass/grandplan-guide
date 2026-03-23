@@ -1,99 +1,54 @@
 import { SectionCard } from "./SectionCard";
 import { HubSpotBadge } from "./HubSpotBadge";
 import { Badge } from "@/components/ui/badge";
-import { User, ThumbsUp, ThumbsDown, Minus, Crown, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { User, ThumbsUp, ThumbsDown, Minus, Crown, Users, Plus, X } from "lucide-react";
+import { useStakeholders, useAddStakeholder, useUpdateStakeholder, useDeleteStakeholder } from "@/hooks/useStakeholders";
+import type { Stakeholder } from "@/types/database";
 
-interface Stakeholder {
-  name: string;
-  title: string;
-  role: "Decision Maker" | "Influencer" | "Champion" | "Blocker" | "User";
-  sentiment: "positive" | "neutral" | "negative";
-  notes: string;
-  lastContact: string;
-  contactedBy: string;
+interface Props {
+  planId: string;
 }
 
-const stakeholders: Stakeholder[] = [
-  {
-    name: "Jennifer Walsh",
-    title: "Chief Technology Officer",
-    role: "Decision Maker",
-    sentiment: "positive",
-    notes: "Strong advocate for our platform. Key sponsor.",
-    lastContact: "Jan 10, 2025",
-    contactedBy: "",
-  },
-  {
-    name: "Michael Torres",
-    title: "VP of Engineering",
-    role: "Influencer",
-    sentiment: "positive",
-    notes: "Impressed with SAP integration demo. Pushing for expansion.",
-    lastContact: "Jan 8, 2025",
-    contactedBy: "",
-  },
-  {
-    name: "Lisa Chen",
-    title: "Chief Procurement Officer",
-    role: "Influencer",
-    sentiment: "neutral",
-    notes: "Focused on cost reduction. Need ROI data for Q2.",
-    lastContact: "Dec 15, 2024",
-    contactedBy: "",
-  },
-  {
-    name: "Robert Kim",
-    title: "Director of IT Security",
-    role: "Blocker",
-    sentiment: "negative",
-    notes: "Concerns about data residency in EU. Requires SOC2 Type II.",
-    lastContact: "Dec 20, 2024",
-    contactedBy: "",
-  },
-  {
-    name: "Amanda Foster",
-    title: "Product Manager",
-    role: "Champion",
-    sentiment: "positive",
-    notes: "Day-to-day contact. Actively promoting internally.",
-    lastContact: "Jan 12, 2025",
-    contactedBy: "",
-  },
-];
+const getRoleIcon = (role: Stakeholder["role"]) => {
+  switch (role) {
+    case "Decision Maker": return <Crown className="w-3 h-3" />;
+    case "Champion":       return <ThumbsUp className="w-3 h-3" />;
+    case "Blocker":        return <ThumbsDown className="w-3 h-3" />;
+    default:               return <User className="w-3 h-3" />;
+  }
+};
 
-export const StakeholderMap = () => {
-  const getRoleIcon = (role: Stakeholder["role"]) => {
-    switch (role) {
-      case "Decision Maker": return <Crown className="w-3 h-3" />;
-      case "Champion": return <ThumbsUp className="w-3 h-3" />;
-      case "Blocker": return <ThumbsDown className="w-3 h-3" />;
-      default: return <User className="w-3 h-3" />;
-    }
-  };
+const getRoleColor = (role: Stakeholder["role"]) => {
+  switch (role) {
+    case "Decision Maker": return "bg-primary text-primary-foreground";
+    case "Champion":       return "bg-green-100 text-green-700";
+    case "Blocker":        return "bg-destructive/10 text-destructive";
+    case "Influencer":     return "bg-accent/10 text-accent";
+    default:               return "bg-muted text-muted-foreground";
+  }
+};
 
-  const getRoleColor = (role: Stakeholder["role"]) => {
-    switch (role) {
-      case "Decision Maker": return "bg-primary text-primary-foreground";
-      case "Champion": return "bg-success/10 text-success";
-      case "Blocker": return "bg-destructive/10 text-destructive";
-      case "Influencer": return "bg-accent/10 text-accent";
-      default: return "bg-muted text-muted-foreground";
-    }
-  };
+const getSentimentIcon = (sentiment: Stakeholder["sentiment"]) => {
+  switch (sentiment) {
+    case "positive": return <ThumbsUp className="w-4 h-4 text-green-600" />;
+    case "negative": return <ThumbsDown className="w-4 h-4 text-destructive" />;
+    default:         return <Minus className="w-4 h-4 text-muted-foreground" />;
+  }
+};
 
-  const getSentimentIcon = (sentiment: Stakeholder["sentiment"]) => {
-    switch (sentiment) {
-      case "positive": return <ThumbsUp className="w-4 h-4 text-success" />;
-      case "negative": return <ThumbsDown className="w-4 h-4 text-destructive" />;
-      default: return <Minus className="w-4 h-4 text-muted-foreground" />;
-    }
-  };
+export const StakeholderMap = ({ planId }: Props) => {
+  const { data: stakeholders = [], isLoading } = useStakeholders(planId);
+  const { mutate: addStakeholder }    = useAddStakeholder();
+  const { mutate: updateStakeholder } = useUpdateStakeholder();
+  const { mutate: deleteStakeholder } = useDeleteStakeholder();
+
+  if (isLoading) return <SectionCard title="Stakeholder Map"><div className="animate-pulse h-40 bg-muted rounded" /></SectionCard>;
 
   return (
-    <SectionCard 
-      title="Stakeholder Map" 
-      badge={<HubSpotBadge fieldName="contacts" />}
-    >
+    <SectionCard title="Stakeholder Map" badge={<HubSpotBadge fieldName="contacts" />}>
       <div className="overflow-x-auto">
         <table className="data-table">
           <thead>
@@ -104,49 +59,75 @@ export const StakeholderMap = () => {
               <th>Notes</th>
               <th>Last Contact</th>
               <th>Contacted By</th>
+              <th className="w-10"></th>
             </tr>
           </thead>
           <tbody>
             {stakeholders.map((s) => (
-              <tr key={s.name}>
+              <tr key={s.id} className="group">
                 <td>
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
                       <Users className="w-4 h-4 text-muted-foreground" />
                     </div>
-                    <div>
-                      <div className="font-medium">{s.name}</div>
-                      <div className="text-xs text-muted-foreground">{s.title}</div>
+                    <div className="space-y-1 min-w-0">
+                      <Input value={s.name ?? ""} onChange={(e) => updateStakeholder({ id: s.id, planId, name: e.target.value })} placeholder="Name" className="h-6 text-sm font-medium bg-background px-2 border-0 focus-visible:ring-1" />
+                      <Input value={s.title ?? ""} onChange={(e) => updateStakeholder({ id: s.id, planId, title: e.target.value })} placeholder="Title" className="h-5 text-xs text-muted-foreground bg-background px-2 border-0 focus-visible:ring-1" />
                     </div>
                   </div>
                 </td>
                 <td>
-                  <Badge className={`${getRoleColor(s.role)} gap-1`}>
-                    {getRoleIcon(s.role)}
-                    {s.role}
-                  </Badge>
+                  <Select value={s.role ?? "Influencer"} onValueChange={(v) => updateStakeholder({ id: s.id, planId, role: v as Stakeholder["role"] })}>
+                    <SelectTrigger className="h-8 w-36 border-0 bg-transparent p-0">
+                      <Badge className={`${getRoleColor(s.role)} gap-1 cursor-pointer`}>
+                        {getRoleIcon(s.role)}
+                        {s.role ?? "Influencer"}
+                      </Badge>
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border shadow-lg z-50">
+                      {["Decision Maker","Influencer","Champion","Blocker","User"].map((r) => (
+                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </td>
                 <td>
-                  <div className="flex items-center gap-2">
-                    {getSentimentIcon(s.sentiment)}
-                    <span className="text-sm capitalize">{s.sentiment}</span>
-                  </div>
+                  <Select value={s.sentiment ?? "neutral"} onValueChange={(v) => updateStakeholder({ id: s.id, planId, sentiment: v as Stakeholder["sentiment"] })}>
+                    <SelectTrigger className="h-8 w-28 border-0 bg-transparent p-0">
+                      <div className="flex items-center gap-2">
+                        {getSentimentIcon(s.sentiment)}
+                        <span className="text-sm capitalize">{s.sentiment ?? "neutral"}</span>
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border shadow-lg z-50">
+                      <SelectItem value="positive">Positive</SelectItem>
+                      <SelectItem value="neutral">Neutral</SelectItem>
+                      <SelectItem value="negative">Negative</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </td>
                 <td className="max-w-xs">
-                  <span className="text-sm text-muted-foreground">{s.notes}</span>
+                  <Input value={s.notes ?? ""} onChange={(e) => updateStakeholder({ id: s.id, planId, notes: e.target.value })} placeholder="Notes…" className="h-7 text-sm text-muted-foreground bg-background border-0 focus-visible:ring-1" />
                 </td>
                 <td>
-                  <span className="text-sm text-muted-foreground">{s.lastContact}</span>
+                  <Input value={s.last_contact ?? ""} onChange={(e) => updateStakeholder({ id: s.id, planId, last_contact: e.target.value })} placeholder="YYYY-MM-DD" className="h-7 text-sm text-muted-foreground bg-background border-0 focus-visible:ring-1 w-28" />
                 </td>
                 <td>
-                  <span className="text-sm text-muted-foreground">{s.contactedBy || "—"}</span>
+                  <Input value={s.contacted_by ?? ""} onChange={(e) => updateStakeholder({ id: s.id, planId, contacted_by: e.target.value })} placeholder="—" className="h-7 text-sm text-muted-foreground bg-background border-0 focus-visible:ring-1 w-24" />
+                </td>
+                <td>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => deleteStakeholder({ id: s.id, planId })}>
+                    <X className="w-4 h-4 text-muted-foreground" />
+                  </Button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        <Button variant="ghost" size="sm" className="text-xs text-muted-foreground mt-2" onClick={() => addStakeholder(planId)}>
+          <Plus className="w-3 h-3 mr-1" /> Add stakeholder
+        </Button>
       </div>
     </SectionCard>
   );
 };
-

@@ -11,98 +11,42 @@ import {
 import { Search, Building2, Crown, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { usePlans } from "@/hooks/usePlans";
+import type { AccountPlan } from "@/types/database";
 
-interface AccountPlan {
-  id: string;
-  company: string;
-  accountRank: "Strategic" | "Grow" | "Maintain" | "Micro" | "Lose";
-  accountManager: string;
-  csm: string;
-  lastUpdated: string;
-}
-
-const samplePlans: AccountPlan[] = [
-  {
-    id: "1",
-    company: "Meridian Shipping Co.",
-    accountRank: "Strategic",
-    accountManager: "Sarah Johnson",
-    csm: "David Park",
-    lastUpdated: "Jan 12, 2025",
-  },
-  {
-    id: "2",
-    company: "Atlantic Maritime Group",
-    accountRank: "Grow",
-    accountManager: "Sarah Johnson",
-    csm: "Emily Rodriguez",
-    lastUpdated: "Jan 8, 2025",
-  },
-  {
-    id: "3",
-    company: "Nordic Freight Lines",
-    accountRank: "Maintain",
-    accountManager: "James Mitchell",
-    csm: "David Park",
-    lastUpdated: "Dec 20, 2024",
-  },
-  {
-    id: "4",
-    company: "Pacific Trade Logistics",
-    accountRank: "Grow",
-    accountManager: "James Mitchell",
-    csm: "Emily Rodriguez",
-    lastUpdated: "Dec 15, 2024",
-  },
-  {
-    id: "5",
-    company: "Global Vessel Partners",
-    accountRank: "Micro",
-    accountManager: "Rachel Kim",
-    csm: "David Park",
-    lastUpdated: "Nov 30, 2024",
-  },
-  {
-    id: "6",
-    company: "Oceanic Supply Chain Ltd.",
-    accountRank: "Lose",
-    accountManager: "Rachel Kim",
-    csm: "Emily Rodriguez",
-    lastUpdated: "Jan 10, 2025",
-  },
-];
-
-const rankColors: Record<AccountPlan["accountRank"], string> = {
+const rankColors: Record<AccountPlan["account_rank"], string> = {
   Strategic: "bg-primary text-primary-foreground",
-  Grow: "bg-green-100 text-green-700",       // fixed: replaced bg-success
-  Maintain: "bg-yellow-100 text-yellow-700", // fixed: replaced bg-warning
+  Grow: "bg-green-100 text-green-700",
+  Maintain: "bg-yellow-100 text-yellow-700",
   Micro: "bg-muted text-muted-foreground",
   Lose: "bg-destructive/15 text-destructive",
 };
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { data: plans = [], isLoading, isError } = usePlans();
+
   const [search, setSearch] = useState("");
   const [filterAM, setFilterAM] = useState("all");
   const [filterCSM, setFilterCSM] = useState("all");
   const [filterRank, setFilterRank] = useState("all");
 
-  const uniqueAMs = useMemo(() => [...new Set(samplePlans.map((p) => p.accountManager))], []);
-  const uniqueCSMs = useMemo(() => [...new Set(samplePlans.map((p) => p.csm))], []);
-  const uniqueRanks = useMemo(() => [...new Set(samplePlans.map((p) => p.accountRank))], []);
+  const uniqueAMs   = useMemo(() => [...new Set(plans.map((p) => p.account_manager).filter(Boolean))], [plans]);
+  const uniqueCSMs  = useMemo(() => [...new Set(plans.map((p) => p.csm).filter(Boolean))], [plans]);
+  const uniqueRanks = useMemo(() => [...new Set(plans.map((p) => p.account_rank))], [plans]);
 
   const filtered = useMemo(() => {
-    return samplePlans.filter((plan) => {
+    return plans.filter((plan) => {
       const matchesSearch = plan.company.toLowerCase().includes(search.toLowerCase());
-      const matchesAM = filterAM === "all" || plan.accountManager === filterAM;
-      const matchesCSM = filterCSM === "all" || plan.csm === filterCSM;
-      const matchesRank = filterRank === "all" || plan.accountRank === filterRank;
+      const matchesAM     = filterAM   === "all" || plan.account_manager === filterAM;
+      const matchesCSM    = filterCSM  === "all" || plan.csm === filterCSM;
+      const matchesRank   = filterRank === "all" || plan.account_rank === filterRank;
       return matchesSearch && matchesAM && matchesCSM && matchesRank;
     });
-  }, [search, filterAM, filterCSM, filterRank]);
+  }, [plans, search, filterAM, filterCSM, filterRank]);
 
-  // Fixed: "New Plan" button now navigates to a new plan route
-  const handleNewPlan = () => navigate("/plan/new");
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
   return (
     <div className="min-h-screen bg-background">
@@ -113,10 +57,10 @@ const Dashboard = () => {
             <div>
               <h1 className="text-2xl font-bold text-foreground">Account Plans</h1>
               <p className="text-sm text-muted-foreground mt-1">
-                {samplePlans.length} account plans • {filtered.length} shown
+                {isLoading ? "Loading…" : `${plans.length} account plans • ${filtered.length} shown`}
               </p>
             </div>
-            <Button className="gap-2" onClick={handleNewPlan}>
+            <Button className="gap-2" onClick={() => navigate("/plan/new")}>
               <Plus className="w-4 h-4" />
               New Plan
             </Button>
@@ -143,7 +87,7 @@ const Dashboard = () => {
             <SelectContent>
               <SelectItem value="all">All Account Managers</SelectItem>
               {uniqueAMs.map((am) => (
-                <SelectItem key={am} value={am}>{am}</SelectItem>
+                <SelectItem key={am!} value={am!}>{am}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -154,7 +98,7 @@ const Dashboard = () => {
             <SelectContent>
               <SelectItem value="all">All CSMs</SelectItem>
               {uniqueCSMs.map((csm) => (
-                <SelectItem key={csm} value={csm}>{csm}</SelectItem>
+                <SelectItem key={csm!} value={csm!}>{csm}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -171,14 +115,41 @@ const Dashboard = () => {
           </Select>
         </div>
 
-        {/* Plan Cards */}
-        {filtered.length === 0 ? (
+        {/* Loading */}
+        {isLoading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-card border border-border rounded-lg p-5 animate-pulse">
+                <div className="h-4 bg-muted rounded w-2/3 mb-4" />
+                <div className="h-3 bg-muted rounded w-1/3 mb-6" />
+                <div className="space-y-2">
+                  <div className="h-3 bg-muted rounded w-full" />
+                  <div className="h-3 bg-muted rounded w-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Error */}
+        {isError && (
+          <div className="text-center py-16 text-destructive">
+            <p className="text-lg font-medium">Failed to load account plans</p>
+            <p className="text-sm mt-1">Check your Supabase connection and try again.</p>
+          </div>
+        )}
+
+        {/* Empty */}
+        {!isLoading && !isError && filtered.length === 0 && (
           <div className="text-center py-16 text-muted-foreground">
             <Building2 className="w-12 h-12 mx-auto mb-3 opacity-40" />
             <p className="text-lg font-medium">No account plans found</p>
             <p className="text-sm mt-1">Try adjusting your search or filters</p>
           </div>
-        ) : (
+        )}
+
+        {/* Plan Cards */}
+        {!isLoading && !isError && filtered.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((plan) => (
               <div
@@ -197,25 +168,25 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                <Badge className={`${rankColors[plan.accountRank]} mb-4`}>
+                <Badge className={`${rankColors[plan.account_rank]} mb-4`}>
                   <Crown className="w-3 h-3 mr-1" />
-                  {plan.accountRank}
+                  {plan.account_rank}
                 </Badge>
 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Account Manager</span>
-                    <span className="font-medium text-foreground">{plan.accountManager}</span>
+                    <span className="font-medium text-foreground">{plan.account_manager ?? "—"}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">CSM</span>
-                    <span className="font-medium text-foreground">{plan.csm}</span>
+                    <span className="font-medium text-foreground">{plan.csm ?? "—"}</span>
                   </div>
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-border">
                   <span className="text-xs text-muted-foreground">
-                    Last updated {plan.lastUpdated}
+                    Last updated {formatDate(plan.last_updated)}
                   </span>
                 </div>
               </div>
