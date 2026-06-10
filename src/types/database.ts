@@ -18,6 +18,7 @@ export interface AccountPlan {
   account_rank: 'Strategic' | 'Grow' | 'Maintain' | 'Micro' | 'Lose';
   account_manager: string | null;
   csm: string | null;
+  hubspot_company_id: string | null;
   last_updated: string;
   created_at: string;
 }
@@ -29,7 +30,9 @@ export interface AccountOverview {
   industry: string | null;
   account_rank: string | null;
   health_score: number | null;
-  annual_revenue: number | null;
+  annual_support_revenue: number | null;
+  annual_licence_revenue: number | null;
+  annual_ps_revenue:      number | null;
   revenue_trend: string | null;
   growth_potential: string | null;
   vessel_count: number | null;
@@ -108,6 +111,7 @@ export interface Stakeholder {
   notes: string | null;
   last_contact: string | null;
   contacted_by: string | null;
+  hubspot_contact_id: string | null;
   created_at: string;
 }
 
@@ -118,6 +122,8 @@ export interface ExecutionAction {
   owner: string | null;
   due_date: string | null;
   priority: 'high' | 'medium' | 'low';
+  progress: 'completed' | 'in-progress' | 'stuck' | null;
+  notes: string | null;
   completed: boolean;
   hubspot_task: boolean;
   quarter: string | null;

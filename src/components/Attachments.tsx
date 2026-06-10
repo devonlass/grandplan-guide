@@ -1,94 +1,66 @@
+import { useRef } from "react";
 import { SectionCard } from "./SectionCard";
-import { Paperclip, Upload, FileText, Image, File, Trash2 } from "lucide-react";
-import { useState, useRef } from "react"; // fixed: added useRef
+import { Paperclip, Upload, FileText, Image, File, Trash2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  useAttachments,
+  useCreateAttachment,
+  useDeleteAttachment,
+  openHubSpotFile,
+  fileTypeFromName,
+  formatFileSize,
+  type Attachment,
+} from "@/hooks/useAttachments";
 
-interface Attachment {
-  id: string;
-  name: string;
-  type: "document" | "image" | "other";
-  size: string;
-  uploadedBy: string;
-  uploadedAt: string;
-}
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const initialAttachments: Attachment[] = [
-  {
-    id: "1",
-    name: "Q1_Business_Review.pdf",
-    type: "document",
-    size: "2.4 MB",
-    uploadedBy: "Sarah Johnson",
-    uploadedAt: "Jan 10, 2025",
-  },
-  {
-    id: "2",
-    name: "Architecture_Diagram.png",
-    type: "image",
-    size: "1.1 MB",
-    uploadedBy: "Michael Torres",
-    uploadedAt: "Jan 8, 2025",
-  },
-  {
-    id: "3",
-    name: "SOW_Amendment_v2.docx",
-    type: "document",
-    size: "340 KB",
-    uploadedBy: "Amanda Foster",
-    uploadedAt: "Dec 20, 2024",
-  },
-];
-
-const getFileIcon = (type: Attachment["type"]) => {
+const getFileIcon = (type: string | null) => {
   switch (type) {
-    case "document":
-      return <FileText className="w-5 h-5 text-primary" />;
-    case "image":
-      return <Image className="w-5 h-5 text-accent" />;
-    default:
-      return <File className="w-5 h-5 text-muted-foreground" />;
+    case "document": return <FileText className="w-5 h-5 text-primary" />;
+    case "image":    return <Image    className="w-5 h-5 text-accent"   />;
+    default:         return <File     className="w-5 h-5 text-muted-foreground" />;
   }
 };
 
-// Fixed: helper to determine file type from extension
-const getFileType = (filename: string): Attachment["type"] => {
-  const ext = filename.split(".").pop()?.toLowerCase();
-  if (["pdf", "doc", "docx", "xlsx", "txt"].includes(ext ?? "")) return "document";
-  if (["png", "jpg", "jpeg", "gif", "webp"].includes(ext ?? "")) return "image";
-  return "other";
-};
+const formatDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-// Fixed: helper to format bytes into readable size string
-const formatFileSize = (bytes: number): string => {
-  if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(1)} MB`;
-  if (bytes >= 1_000) return `${Math.round(bytes / 1_000)} KB`;
-  return `${bytes} B`;
-};
+// ─── Component ────────────────────────────────────────────────────────────────
 
-export const Attachments = () => {
-  const [attachments, setAttachments] = useState<Attachment[]>(initialAttachments);
-  // Fixed: ref to trigger hidden file input
+interface AttachmentsProps {
+  planId: string;
+}
+
+export const Attachments = ({ planId }: AttachmentsProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleRemove = (id: string) => {
-    setAttachments((prev) => prev.filter((a) => a.id !== id));
-  };
+  const { data: attachments = [], isLoading } = useAttachments(planId);
+  const { mutate: createAttachment } = useCreateAttachment();
+  const { mutate: deleteAttachment } = useDeleteAttachment();
 
-  // Fixed: handle files selected via the file picker
+  // Handle local file selection — stores metadata in DB (no binary upload to Supabase)
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
-    const today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    const newAttachments: Attachment[] = files.map((file) => ({
-      id: `${Date.now()}-${file.name}`,
-      name: file.name,
-      type: getFileType(file.name),
-      size: formatFileSize(file.size),
-      uploadedBy: "You",
-      uploadedAt: today,
-    }));
-    setAttachments((prev) => [...prev, ...newAttachments]);
-    // Reset input so the same file can be re-uploaded if needed
+    for (const file of files) {
+      createAttachment({
+        plan_id:   planId,
+        name:      file.name,
+        url:       null,      // no storage backend wired yet — file name only
+        file_type: fileTypeFromName(file.name),
+        file_size: file.size,
+        source:    "manual",
+      });
+    }
     e.target.value = "";
+  };
+
+  const handleOpen = async (attachment: Attachment) => {
+    if (attachment.source === "hubspot" || attachment.hubspot_file_id) {
+      await openHubSpotFile(attachment);
+    } else if (attachment.url) {
+      window.open(attachment.url, "_blank", "noopener,noreferrer");
+    }
   };
 
   return (
@@ -97,11 +69,11 @@ export const Attachments = () => {
       badge={
         <span className="flex items-center gap-1 text-xs text-muted-foreground font-normal">
           <Paperclip className="w-3 h-3" />
-          {attachments.length} files
+          {isLoading ? "…" : `${attachments.length} files`}
         </span>
       }
     >
-      {/* Fixed: hidden file input wired to upload area */}
+      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -111,7 +83,7 @@ export const Attachments = () => {
         onChange={handleFileChange}
       />
 
-      {/* Upload area - fixed: now triggers file picker on click */}
+      {/* Upload area */}
       <div
         className="border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center gap-2 text-center mb-4 hover:border-primary/40 transition-colors cursor-pointer"
         onClick={() => fileInputRef.current?.click()}
@@ -121,35 +93,72 @@ export const Attachments = () => {
           Drag & drop files here, or click to browse
         </p>
         <p className="text-xs text-muted-foreground">
-          PDF, DOCX, XLSX, PNG, JPG up to 20MB
+          PDF, DOCX, XLSX, PNG, JPG up to 20 MB
         </p>
       </div>
 
       {/* File list */}
-      {attachments.length > 0 && (
+      {isLoading && (
+        <div className="space-y-2">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-16 rounded-lg bg-muted animate-pulse" />
+          ))}
+        </div>
+      )}
+
+      {!isLoading && attachments.length > 0 && (
         <div className="space-y-2">
           {attachments.map((file) => (
             <div
               key={file.id}
               className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group"
             >
-              <div className="w-10 h-10 rounded-md bg-background flex items-center justify-center border border-border">
-                {getFileIcon(file.type)}
+              {/* Icon */}
+              <div className="w-10 h-10 rounded-md bg-background flex items-center justify-center border border-border flex-shrink-0">
+                {getFileIcon(file.file_type)}
               </div>
+
+              {/* Name + meta */}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{file.name}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm font-medium truncate">{file.name}</p>
+                  {file.source === "hubspot" && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-orange-300 text-orange-600">
+                      HubSpot
+                    </Badge>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {file.size} • Uploaded by {file.uploadedBy} • {file.uploadedAt}
+                  {[
+                    formatFileSize(file.file_size),
+                    formatDate(file.uploaded_at),
+                  ].filter(Boolean).join(" • ")}
                 </p>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-                onClick={() => handleRemove(file.id)}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+
+              {/* Actions */}
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {(file.url || file.hubspot_file_id) && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-primary"
+                    onClick={() => handleOpen(file)}
+                    title="Open file"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-destructive"
+                  onClick={() => deleteAttachment({ id: file.id, plan_id: planId })}
+                  title="Remove"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           ))}
         </div>

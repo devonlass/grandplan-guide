@@ -1,9 +1,16 @@
--- GrandPlan Guide – Initial Schema
+-- GrandPlan Guide - Initial Schema
 -- Run this in the Supabase SQL editor before seeding data.
 
--- ─────────────────────────────────────────
+-- =========================================
+-- RESET (drop stale tables from any prior run)
+-- =========================================
+DROP TABLE IF EXISTS dependencies, risks, quarterly_reviews, execution_actions,
+  stakeholders, team_members, advantages, threats, opportunities,
+  strategy_config, customer_strategy, account_overview, account_plans CASCADE;
+
+-- =========================================
 -- TABLES
--- ─────────────────────────────────────────
+-- =========================================
 
 CREATE TABLE IF NOT EXISTS account_plans (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -155,9 +162,9 @@ CREATE TABLE IF NOT EXISTS dependencies (
   created_at timestamptz DEFAULT now()
 );
 
--- ─────────────────────────────────────────
+-- =========================================
 -- ROW LEVEL SECURITY
--- ─────────────────────────────────────────
+-- =========================================
 
 ALTER TABLE account_plans       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE account_overview    ENABLE ROW LEVEL SECURITY;

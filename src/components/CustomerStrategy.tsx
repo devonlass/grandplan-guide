@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Target, TrendingUp, AlertTriangle, Lightbulb, Plus, X } from "lucide-react";
 import { useCustomerStrategy, useUpdateCustomerStrategy } from "@/hooks/useCustomerStrategy";
+import { usePlan } from "@/hooks/usePlans";
 
 interface Props {
   planId: string;
@@ -13,6 +14,7 @@ interface Props {
 
 export const CustomerStrategy = ({ planId }: Props) => {
   const { data, isLoading } = useCustomerStrategy(planId);
+  const { data: plan } = usePlan(planId);
   const { mutate: updateStrategy } = useUpdateCustomerStrategy();
 
   const [priorities,      setPriorities]      = useState<string[]>([]);
@@ -168,6 +170,7 @@ export const CustomerStrategy = ({ planId }: Props) => {
             />
           </FieldGroup>
         </div>
+
       </div>
     </SectionCard>
   );

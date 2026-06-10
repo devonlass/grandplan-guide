@@ -8,14 +8,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Building2, Crown, Plus, LogOut, RefreshCw } from "lucide-react";
+import { Search, Building2, Crown, Plus, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useAccounts, Account } from "@/hooks/useAccounts";
-import { useHubSpotSync } from "@/hooks/useHubSpotSync";
-import { supabase } from "@/lib/supabase";
+import { usePlans, useSyncHubSpotProperties } from "@/hooks/usePlans";
+import { HubSpotImportDialog } from "@/components/HubSpotImportDialog";
+import { useToast } from "@/hooks/use-toast";
+import type { AccountPlan } from "@/types/database";
 
-const rankColors: Record<Account["account_rank"], string> = {
+const rankColors: Record<AccountPlan["account_rank"], string> = {
   Strategic: "bg-primary text-primary-foreground",
   Grow: "bg-green-100 text-green-700",
   Maintain: "bg-yellow-100 text-yellow-700",
@@ -25,30 +26,47 @@ const rankColors: Record<Account["account_rank"], string> = {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { accounts, loading, error } = useAccounts();
-  const { syncCompanies, syncing, error: syncError, syncedCount } = useHubSpotSync();
+  const { toast } = useToast();
+  const { data: plans = [], isLoading, isError } = usePlans();
+  const { mutate: syncProperties, isPending: isSyncing } = useSyncHubSpotProperties();
+
   const [search, setSearch] = useState("");
   const [filterAM, setFilterAM] = useState("all");
   const [filterCSM, setFilterCSM] = useState("all");
   const [filterRank, setFilterRank] = useState("all");
+  const [importOpen, setImportOpen] = useState(false);
 
-  const uniqueAMs = useMemo(() => [...new Set(accounts.map((p) => p.account_manager))], [accounts]);
-  const uniqueCSMs = useMemo(() => [...new Set(accounts.map((p) => p.csm))], [accounts]);
-  const uniqueRanks = useMemo(() => [...new Set(accounts.map((p) => p.account_rank))], [accounts]);
+  const handleSync = () => {
+    syncProperties(undefined, {
+      onSuccess: ({ updated, attachmentsSynced }) => {
+        toast({
+          title: "Sync complete",
+          description: `Updated ${updated} account plans • ${attachmentsSynced} contracts/attachments synced from HubSpot.`,
+        });
+      },
+      onError: (err) => {
+        toast({
+          title: "Sync failed",
+          description: err instanceof Error ? err.message : "Unknown error",
+          variant: "destructive",
+        });
+      },
+    });
+  };
+
+  const uniqueAMs    = useMemo(() => [...new Set(plans.map((p) => p.account_manager).filter(Boolean))] as string[], [plans]);
+  const uniqueCSMs   = useMemo(() => [...new Set(plans.map((p) => p.csm).filter(Boolean))] as string[], [plans]);
+  const uniqueRanks  = useMemo(() => [...new Set(plans.map((p) => p.account_rank))], [plans]);
 
   const filtered = useMemo(() => {
-    return accounts.filter((plan) => {
+    return plans.filter((plan) => {
       const matchesSearch = plan.company.toLowerCase().includes(search.toLowerCase());
-      const matchesAM = filterAM === "all" || plan.account_manager === filterAM;
-      const matchesCSM = filterCSM === "all" || plan.csm === filterCSM;
-      const matchesRank = filterRank === "all" || plan.account_rank === filterRank;
+      const matchesAM     = filterAM   === "all" || plan.account_manager === filterAM;
+      const matchesCSM    = filterCSM  === "all" || plan.csm             === filterCSM;
+      const matchesRank   = filterRank === "all" || plan.account_rank    === filterRank;
       return matchesSearch && matchesAM && matchesCSM && matchesRank;
     });
-  }, [accounts, search, filterAM, filterCSM, filterRank]);
-
-  // Fixed: "New Plan" button now navigates to a new plan route
-  const handleNewPlan = () => navigate("/plan/new");
-  const handleLogout = async () => { await supabase.auth.signOut(); navigate("/login"); };
+  }, [plans, search, filterAM, filterCSM, filterRank]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -59,29 +77,30 @@ const Dashboard = () => {
             <div>
               <h1 className="text-2xl font-bold text-foreground">Account Plans</h1>
               <p className="text-sm text-muted-foreground mt-1">
-                {accounts.length} account plans • {filtered.length} shown
+                {plans.length} account plans • {filtered.length} shown
               </p>
-              {/* Sync status messages */}
-              {syncedCount > 0 && (
-                <p className="text-sm text-green-600 mt-1">
-                  ✓ Synced {syncedCount} companies from HubSpot
-                </p>
-              )}
-              {syncError && (
-                <p className="text-sm text-destructive mt-1">
-                  Sync error: {syncError}
-                </p>
-              )}
             </div>
-            <div className="flex items-center gap-3">
-              <Button className="gap-2" onClick={handleNewPlan}>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={handleSync}
+                disabled={isSyncing}
+                title="Update account rank & manager for all HubSpot-linked plans"
+              >
+                <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`} />
+                {isSyncing ? "Syncing…" : "Sync HubSpot"}
+              </Button>
+              <Button variant="outline" className="gap-2" onClick={() => setImportOpen(true)}>
+                <Building2 className="w-4 h-4" />
+                Import from HubSpot
+              </Button>
+              <Button className="gap-2" onClick={() => navigate("/plan/new")}>
                 <Plus className="w-4 h-4" />
                 New Plan
               </Button>
-              <Button variant="ghost" size="icon" onClick={handleLogout} title="Sign out">
-                <LogOut className="w-4 h-4" />
-              </Button>
             </div>
+            <HubSpotImportDialog open={importOpen} onOpenChange={setImportOpen} />
           </div>
         </div>
       </header>
@@ -105,7 +124,7 @@ const Dashboard = () => {
             <SelectContent>
               <SelectItem value="all">All Account Managers</SelectItem>
               {uniqueAMs.map((am) => (
-                <SelectItem key={am!} value={am!}>{am}</SelectItem>
+                <SelectItem key={am} value={am}>{am}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -116,7 +135,7 @@ const Dashboard = () => {
             <SelectContent>
               <SelectItem value="all">All CSMs</SelectItem>
               {uniqueCSMs.map((csm) => (
-                <SelectItem key={csm!} value={csm!}>{csm}</SelectItem>
+                <SelectItem key={csm} value={csm}>{csm}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -134,7 +153,7 @@ const Dashboard = () => {
         </div>
 
         {/* Loading */}
-        {loading && (
+        {isLoading && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="bg-card border border-border rounded-lg p-5 animate-pulse">
@@ -150,7 +169,7 @@ const Dashboard = () => {
         )}
 
         {/* Error */}
-        {error && (
+        {isError && (
           <div className="text-center py-16 text-destructive">
             <p className="text-lg font-medium">Failed to load account plans</p>
             <p className="text-sm mt-1">Check your Supabase connection and try again.</p>
@@ -158,22 +177,22 @@ const Dashboard = () => {
         )}
 
         {/* Empty */}
-        {!loading && !error && filtered.length === 0 && (
+        {!isLoading && !isError && filtered.length === 0 && (
           <div className="text-center py-16 text-muted-foreground">
             <Building2 className="w-12 h-12 mx-auto mb-3 opacity-40" />
             <p className="text-lg font-medium">No account plans found</p>
             <p className="text-sm mt-1">
-              {accounts.length === 0
+              {plans.length === 0
                 ? "Sync from HubSpot or create your first account plan"
                 : "Try adjusting your search or filters"}
             </p>
-            {accounts.length === 0 && (
+            {plans.length === 0 && (
               <div className="flex items-center justify-center gap-3 mt-4">
-                <Button variant="outline" className="gap-2" onClick={syncCompanies} disabled={syncing}>
-                  <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
-                  {syncing ? "Syncing..." : "Sync from HubSpot"}
+                <Button variant="outline" className="gap-2" onClick={handleSync} disabled={isSyncing}>
+                  <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`} />
+                  {isSyncing ? "Syncing…" : "Sync from HubSpot"}
                 </Button>
-                <Button className="gap-2" onClick={handleNewPlan}>
+                <Button className="gap-2" onClick={() => navigate("/plan/new")}>
                   <Plus className="w-4 h-4" />
                   New Plan
                 </Button>
@@ -183,7 +202,7 @@ const Dashboard = () => {
         )}
 
         {/* Plan Cards */}
-        {!loading && !error && filtered.length > 0 && (
+        {!isLoading && !isError && filtered.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((plan) => (
               <div
@@ -218,12 +237,6 @@ const Dashboard = () => {
                     <span className="text-muted-foreground">CSM</span>
                     <span className="font-medium text-foreground">{plan.csm}</span>
                   </div>
-                  {plan.health_score && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Health Score</span>
-                      <span className="font-medium text-foreground">{plan.health_score}/100</span>
-                    </div>
-                  )}
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-border">

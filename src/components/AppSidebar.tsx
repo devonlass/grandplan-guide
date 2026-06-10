@@ -1,14 +1,16 @@
-import { 
-  Building2, 
-  Target, 
-  Lightbulb, 
-  Users, 
-  ListChecks, 
-  AlertTriangle, 
+import {
+  Building2,
+  Target,
+  Lightbulb,
+  Users,
+  ListChecks,
+  AlertTriangle,
   CalendarCheck,
   FileText,
   ChevronLeft,
-  Paperclip
+  Paperclip,
+  TrendingUp,
+  Presentation
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -25,14 +27,16 @@ import {
 } from "@/components/ui/sidebar";
 
 const sections = [
-  { title: "Account Overview", id: "account-overview", icon: Building2 },
+  { title: "Account Overview",  id: "account-overview",  icon: Building2 },
+  { title: "Live Pipeline",     id: "live-pipeline",     icon: TrendingUp },
   { title: "Customer Strategy", id: "customer-strategy", icon: Target },
   { title: "Our Strategy", id: "our-strategy", icon: Lightbulb },
   { title: "Stakeholder Map", id: "stakeholder-map", icon: Users },
   { title: "Execution Plan", id: "execution-plan", icon: ListChecks },
   { title: "Risks & Dependencies", id: "risks-dependencies", icon: AlertTriangle },
   { title: "Quarterly Review", id: "quarterly-review", icon: CalendarCheck },
-  { title: "Attachments", id: "attachments", icon: Paperclip },
+  { title: "Attachments",   id: "attachments",   icon: Paperclip },
+  { title: "QBR Template",  id: "qbr-template",  icon: Presentation },
 ];
 
 export function AppSidebar() {

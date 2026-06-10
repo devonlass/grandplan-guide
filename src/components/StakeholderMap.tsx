@@ -4,9 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, ThumbsUp, ThumbsDown, Minus, Crown, Users, Plus, X } from "lucide-react";
-import { useStakeholders, useAddStakeholder, useUpdateStakeholder, useDeleteStakeholder } from "@/hooks/useStakeholders";
+import { User, ThumbsUp, ThumbsDown, Minus, Crown, Users, Plus, X, RefreshCw } from "lucide-react";
+import { useStakeholders, useAddStakeholder, useUpdateStakeholder, useDeleteStakeholder, useHubSpotSync } from "@/hooks/useStakeholders";
+import { usePlan } from "@/hooks/usePlans";
 import type { Stakeholder } from "@/types/database";
+import { useToast } from "@/hooks/use-toast";
 
 interface Props {
   planId: string;
@@ -41,14 +43,54 @@ const getSentimentIcon = (sentiment: Stakeholder["sentiment"]) => {
 
 export const StakeholderMap = ({ planId }: Props) => {
   const { data: stakeholders = [], isLoading } = useStakeholders(planId);
-  const { mutate: addStakeholder }    = useAddStakeholder();
-  const { mutate: updateStakeholder } = useUpdateStakeholder();
-  const { mutate: deleteStakeholder } = useDeleteStakeholder();
+  const { data: plan }                          = usePlan(planId);
+  const { mutate: addStakeholder }              = useAddStakeholder();
+  const { mutate: updateStakeholder }           = useUpdateStakeholder();
+  const { mutate: deleteStakeholder }           = useDeleteStakeholder();
+  const { mutate: syncHubSpot, isPending: isSyncing } = useHubSpotSync();
+  const { toast } = useToast();
 
   if (isLoading) return <SectionCard title="Stakeholder Map"><div className="animate-pulse h-40 bg-muted rounded" /></SectionCard>;
 
+  const handleHubSpotRefresh = () => {
+    if (!plan?.company) return;
+    syncHubSpot(
+      { planId, companyName: plan.company },
+      {
+        onSuccess: ({ added, skipped }) => {
+          toast({
+            title: "HubSpot sync complete",
+            description: added > 0
+              ? `Added ${added} new contact${added !== 1 ? "s" : ""}${skipped > 0 ? ` (${skipped} already present)` : ""}.`
+              : `All ${skipped} contact${skipped !== 1 ? "s" : ""} already in stakeholder map.`,
+          });
+        },
+        onError: (err: Error) => {
+          toast({
+            title: "HubSpot sync failed",
+            description: err.message,
+            variant: "destructive",
+          });
+        },
+      }
+    );
+  };
+
+  const refreshAction = (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="gap-1.5 text-xs text-hubspot hover:text-hubspot/80 hover:bg-hubspot/10"
+      onClick={handleHubSpotRefresh}
+      disabled={isSyncing || !plan?.company}
+    >
+      <RefreshCw className={`w-3 h-3 ${isSyncing ? "animate-spin" : ""}`} />
+      {isSyncing ? "Syncing…" : "Refresh from HubSpot"}
+    </Button>
+  );
+
   return (
-    <SectionCard title="Stakeholder Map" badge={<HubSpotBadge fieldName="contacts" />}>
+    <SectionCard title="Stakeholder Map" badge={<HubSpotBadge fieldName="contacts" />} action={refreshAction}>
       <div className="overflow-x-auto">
         <table className="data-table">
           <thead>
